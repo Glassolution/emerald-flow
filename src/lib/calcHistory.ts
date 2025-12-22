@@ -6,11 +6,10 @@ export interface SavedCalculation {
   input: CalculationInput;
   result: CalculationResult;
   isFavorite?: boolean;
-  name?: string; // Nome opcional para o cálculo
+  name?: string;
 }
 
 const STORAGE_KEY = "calc_history";
-const FAVORITES_KEY = "calc_favorites";
 
 /**
  * Obtém todos os cálculos salvos
@@ -21,7 +20,7 @@ export function getSavedCalculations(): SavedCalculation[] {
     if (!saved) return [];
     return JSON.parse(saved) as SavedCalculation[];
   } catch (err) {
-    console.error("❌ [CalcHistory] Erro ao ler cálculos salvos:", err);
+    console.error("Erro ao ler cálculos salvos:", err);
     return [];
   }
 }
@@ -40,7 +39,6 @@ export function saveCalculation(calculation: Omit<SavedCalculation, "id" | "time
   };
 
   saved.unshift(newCalculation);
-  // Manter apenas os últimos 100
   const limited = saved.slice(0, 100);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(limited));
 
@@ -55,13 +53,10 @@ export function deleteCalculation(id: string): boolean {
     const saved = getSavedCalculations();
     const filtered = saved.filter(calc => calc.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-    
-    // Também remover dos favoritos se estiver lá
     toggleFavorite(id, false);
-    
     return true;
   } catch (err) {
-    console.error("❌ [CalcHistory] Erro ao deletar cálculo:", err);
+    console.error("Erro ao deletar cálculo:", err);
     return false;
   }
 }
@@ -78,15 +73,13 @@ export function toggleFavorite(id: string, isFavorite?: boolean): boolean {
       return false;
     }
 
-    // Se isFavorite não foi passado, alterna o estado atual
     const newFavoriteStatus = isFavorite !== undefined ? isFavorite : !calculation.isFavorite;
-    
     calculation.isFavorite = newFavoriteStatus;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
 
     return true;
   } catch (err) {
-    console.error("❌ [CalcHistory] Erro ao favoritar cálculo:", err);
+    console.error("Erro ao favoritar cálculo:", err);
     return false;
   }
 }
@@ -116,7 +109,7 @@ export function updateCalculationName(id: string, name: string): boolean {
 
     return true;
   } catch (err) {
-    console.error("❌ [CalcHistory] Erro ao atualizar nome do cálculo:", err);
+    console.error("Erro ao atualizar nome do cálculo:", err);
     return false;
   }
 }
@@ -152,4 +145,3 @@ export function formatCalculationDate(timestamp: string): string {
     return timestamp;
   }
 }
-
