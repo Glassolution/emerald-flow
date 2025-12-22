@@ -1,186 +1,166 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, Check } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { FIRST_RUN_KEY } from "@/pages/SplashPage";
 
-interface Question {
-  id: string;
-  question: string;
-  options: { value: string; label: string; description?: string }[];
-  multiple?: boolean;
-}
+const ONBOARDING_KEY = "calc_onboarding_completed";
 
-const questions: Question[] = [
+const slides = [
   {
-    id: "business_type",
-    question: "Qual é o tipo do seu negócio?",
-    options: [
-      { value: "saas", label: "SaaS / Software", description: "Empresa de tecnologia" },
-      { value: "ecommerce", label: "E-commerce", description: "Loja online" },
-      { value: "services", label: "Serviços", description: "Consultoria ou agência" },
-      { value: "industry", label: "Indústria", description: "Fabricação" },
-      { value: "other", label: "Outro", description: "Outro tipo" },
-    ]
+    id: 1,
+    image: "https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1200&auto=format&fit=crop&q=80",
+    title: "Pulverização com Drones",
+    subtitle: "O futuro da agricultura de precisão",
+    description: "Transforme sua operação agrícola com tecnologia de ponta. Precisão, eficiência e economia em cada voo.",
   },
   {
-    id: "team_size",
-    question: "Quantas pessoas na equipe?",
-    options: [
-      { value: "1", label: "Só eu" },
-      { value: "2-5", label: "2 a 5 pessoas" },
-      { value: "6-20", label: "6 a 20 pessoas" },
-      { value: "21-50", label: "21 a 50 pessoas" },
-      { value: "50+", label: "Mais de 50" },
-    ]
+    id: 2,
+    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
+    title: "Calculadora de Calda Inteligente",
+    subtitle: "Mistura perfeita, sempre",
+    description: "Calcule a quantidade exata de produto para cada tanque. Suporte a múltiplos produtos e modos de dosagem. Economia garantida.",
   },
   {
-    id: "goals",
-    question: "Seus principais objetivos?",
-    multiple: true,
-    options: [
-      { value: "automation", label: "Automatizar processos" },
-      { value: "analytics", label: "Melhorar análise de dados" },
-      { value: "team", label: "Organizar a equipe" },
-      { value: "customers", label: "Atender melhor clientes" },
-      { value: "growth", label: "Crescer o negócio" },
-    ]
+    id: 3,
+    image: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80",
+    title: "Precisão Total",
+    subtitle: "Resultados que você pode confiar",
+    description: "Controle completo de área, taxa de aplicação e volume. Nunca mais desperdice produto ou tempo. 100% de precisão.",
   },
-  {
-    id: "features",
-    question: "Recursos que mais precisa?",
-    multiple: true,
-    options: [
-      { value: "chat_ai", label: "Chat com IA" },
-      { value: "documents", label: "Gestão de documentos" },
-      { value: "team_management", label: "Gestão de equipe" },
-      { value: "analytics", label: "Métricas e relatórios" },
-      { value: "integrations", label: "Integrações" },
-    ]
-  }
 ];
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
-
-  const currentQuestion = questions[currentStep];
-  const progress = ((currentStep + 1) / questions.length) * 100;
-
-  const handleSelect = (value: string) => {
-    if (currentQuestion.multiple) {
-      const currentAnswers = (answers[currentQuestion.id] as string[]) || [];
-      const newAnswers = currentAnswers.includes(value)
-        ? currentAnswers.filter(v => v !== value)
-        : [...currentAnswers, value];
-      setAnswers({ ...answers, [currentQuestion.id]: newAnswers });
-    } else {
-      setAnswers({ ...answers, [currentQuestion.id]: value });
-    }
-  };
-
-  const isSelected = (value: string) => {
-    const answer = answers[currentQuestion.id];
-    if (Array.isArray(answer)) {
-      return answer.includes(value);
-    }
-    return answer === value;
-  };
-
-  const canContinue = () => {
-    const answer = answers[currentQuestion.id];
-    if (currentQuestion.multiple) {
-      return Array.isArray(answer) && answer.length > 0;
-    }
-    return !!answer;
-  };
+  const { completeOnboarding } = useAuth();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const handleNext = () => {
-    if (currentStep < questions.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      console.log("Onboarding complete:", answers);
-      navigate("/app");
+    if (currentSlide < slides.length - 1) {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentSlide(currentSlide + 1);
+        setIsAnimating(false);
+      }, 300);
     }
   };
 
-  const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
+  const handleComplete = () => {
+    // Mark first run as done
+    localStorage.setItem(FIRST_RUN_KEY, "true");
+    // Marcar onboarding como completo no contexto e localStorage
+    completeOnboarding();
+    // Redirecionar direto para a página de cadastro
+    navigate("/auth/register", { replace: true });
   };
+
+  const handleSkip = () => {
+    // Mark first run as done
+    localStorage.setItem(FIRST_RUN_KEY, "true");
+    // Marcar onboarding como completo
+    completeOnboarding();
+    // Redirecionar para welcome (pode escolher login ou cadastro)
+    navigate("/welcome", { replace: true });
+  };
+
+  const slide = slides[currentSlide];
+  const isLastSlide = currentSlide === slides.length - 1;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="px-5 pt-12 pb-4 safe-area-top">
-        <div className="flex items-center justify-between mb-6">
-          <button 
-            onClick={handleBack}
-            disabled={currentStep === 0}
-            className={`back-button ${currentStep === 0 ? 'opacity-0 pointer-events-none' : ''}`}
-          >
-            <ChevronLeft size={24} className="text-foreground" />
-          </button>
-          <span className="text-sm text-muted-foreground font-medium">
-            {currentStep + 1} de {questions.length}
-          </span>
-          <div className="w-10" />
-        </div>
-        <Progress value={progress} className="h-1 rounded-full" />
-      </header>
-
-      {/* Content */}
-      <main className="flex-1 px-5 py-8 animate-fade-in" key={currentStep}>
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          {currentQuestion.question}
-        </h1>
-        {currentQuestion.multiple && (
-          <p className="text-muted-foreground mb-6">
-            Selecione todas que se aplicam
-          </p>
-        )}
-
-        <div className="space-y-3 mt-8">
-          {currentQuestion.options.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => handleSelect(option.value)}
-              className={`w-full p-5 rounded-2xl text-left transition-all flex items-center justify-between ${
-                isSelected(option.value)
-                  ? "bg-primary/10 border-2 border-primary"
-                  : "bg-secondary border-2 border-transparent"
-              }`}
-            >
-              <div>
-                <p className="font-semibold text-foreground">{option.label}</p>
-                {option.description && (
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {option.description}
-                  </p>
-                )}
-              </div>
-              {isSelected(option.value) && (
-                <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <Check size={14} className="text-primary-foreground" />
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="px-5 py-6 safe-area-bottom">
-        <Button 
-          onClick={handleNext} 
-          disabled={!canContinue()}
-          className="w-full h-14 rounded-2xl text-base font-semibold"
+    <div className="min-h-screen bg-[#0a0a0a] relative overflow-hidden">
+      {/* Skip Button - Top Right */}
+      <div className="absolute top-6 right-6 z-20">
+        <button
+          onClick={handleSkip}
+          className="text-white/70 text-sm font-medium hover:text-white transition-colors px-4 py-2 bg-black/30 rounded-full backdrop-blur-sm"
         >
-          {currentStep === questions.length - 1 ? "Concluir" : "Continuar"}
-        </Button>
-      </footer>
+          Pular
+        </button>
+      </div>
+
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0">
+        <img
+          src={slide.image}
+          alt={slide.title}
+          className="w-full h-full object-cover"
+        />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black/90" />
+        {/* Green accent overlay */}
+        <div className="absolute inset-0 bg-green-500/5" />
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Text Content - Bottom */}
+        <div
+          className={`px-6 pb-8 transition-all duration-500 ${
+            isAnimating ? "opacity-0 translate-y-8" : "opacity-100 translate-y-0"
+          }`}
+        >
+          {/* Title */}
+          <h1 className="text-4xl font-bold text-white mb-3 leading-tight">
+            {slide.title}
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-green-400 text-lg font-medium mb-4">
+            {slide.subtitle}
+          </p>
+
+          {/* Description */}
+          <p className="text-white/80 text-base leading-relaxed mb-8 max-w-md">
+            {slide.description}
+          </p>
+
+          {/* Progress Dots */}
+          <div className="flex justify-center gap-2 mb-6">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setIsAnimating(true);
+                  setTimeout(() => {
+                    setCurrentSlide(index);
+                    setIsAnimating(false);
+                  }, 300);
+                }}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  index === currentSlide
+                    ? "w-8 bg-green-500"
+                    : "w-2 bg-white/30 hover:bg-white/50"
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Continue Button */}
+          <button
+            onClick={isLastSlide ? handleComplete : handleNext}
+            className="w-full h-14 bg-green-500 text-white font-semibold rounded-2xl hover:bg-green-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-2xl shadow-green-500/30"
+          >
+            {isLastSlide ? (
+              <>
+                Começar agora
+                <ChevronRight size={20} />
+              </>
+            ) : (
+              <>
+                Continuar
+                <ChevronRight size={20} />
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
+
+// Export the key for use in other components
+export { ONBOARDING_KEY };

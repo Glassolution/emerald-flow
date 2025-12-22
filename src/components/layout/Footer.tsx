@@ -9,9 +9,9 @@ export function Footer() {
           <div className="col-span-1">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">E</span>
+                <span className="text-primary-foreground font-bold text-lg">C</span>
               </div>
-              <span className="font-bold text-xl">ELO</span>
+              <span className="font-bold text-xl">Calc</span>
             </div>
             <p className="text-background/70 text-sm">
               A plataforma completa para gestão e crescimento do seu negócio.
@@ -89,7 +89,7 @@ export function Footer() {
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-background/60">
-            © {new Date().getFullYear()} ELO. Todos os direitos reservados.
+            © {new Date().getFullYear()} Calc. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-6">
             <a href="#" className="text-background/60 hover:text-background transition-colors">

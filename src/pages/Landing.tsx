@@ -24,9 +24,9 @@ export default function Landing() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-2xl bg-[#1a1a1a] flex items-center justify-center">
-                <span className="text-white font-bold text-lg">E</span>
+                <span className="text-white font-bold text-lg">C</span>
               </div>
-              <span className="font-bold text-xl text-[#1a1a1a]">ELO</span>
+              <span className="font-bold text-xl text-[#1a1a1a]">Calc</span>
             </div>
             <Link 
               to="/auth/login"
@@ -77,7 +77,7 @@ export default function Landing() {
 
               <div className="absolute bottom-0 left-0 right-0 p-4">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm text-white text-[11px] font-medium rounded-full mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   Dashboard
                 </span>
                 <h3 className="text-[20px] font-bold text-white mb-1">
@@ -105,8 +105,8 @@ export default function Landing() {
           <div className="flex flex-wrap gap-3 mb-6">
             {["Sem cartão", "14 dias grátis", "Cancele quando quiser"].map((text) => (
               <div key={text} className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center">
-                  <Check size={10} className="text-emerald-600" />
+                <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Check size={10} className="text-primary" />
                 </div>
                 <span className="text-[12px] text-[#8a8a8a]">{text}</span>
               </div>

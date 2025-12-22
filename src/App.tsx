@@ -2,68 +2,75 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+// Auth
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Layouts
 import { MobileLayout } from "@/components/layout/MobileLayout";
 
 // Public Pages
-import Landing from "@/pages/Landing";
-import Planos from "@/pages/Planos";
-import Ajuda from "@/pages/Ajuda";
-
-// Auth Pages
-import Login from "@/pages/auth/Login";
-import Cadastro from "@/pages/auth/Cadastro";
-import RecuperarSenha from "@/pages/auth/RecuperarSenha";
-
-// Onboarding
+import SplashPage from "@/pages/SplashPage";
 import Onboarding from "@/pages/Onboarding";
+import Welcome from "@/pages/auth/Welcome";
+import Login from "@/pages/auth/Login";
+import Register from "@/pages/auth/Register";
+import ProfileSetup from "@/pages/auth/ProfileSetup";
 
-// App Pages
-import Dashboard from "@/pages/app/Dashboard";
-import ChatIA from "@/pages/app/ChatIA";
-import Configuracoes from "@/pages/app/Configuracoes";
-import AdminMetricas from "@/pages/app/admin/Metricas";
-
-// Misc
-import NotFound from "@/pages/NotFound";
+// App Pages (Protected - Main Navigation)
+import Home from "@/pages/app/Home";
+import Calc from "@/pages/app/Calc";
+import Favoritos from "@/pages/app/Favoritos";
+import Perfil from "@/pages/app/Perfil";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/planos" element={<Planos />} />
-          <Route path="/ajuda" element={<Ajuda />} />
-          
-          {/* Auth Routes - Mobile Full Screen */}
-          <Route path="/auth/login" element={<Login />} />
-          <Route path="/auth/cadastro" element={<Cadastro />} />
-          <Route path="/auth/recuperar-senha" element={<RecuperarSenha />} />
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Root - Splash screen decides the flow */}
+            <Route path="/" element={<SplashPage />} />
+            
+            {/* Onboarding - for first-time users */}
+            <Route path="/onboarding" element={<Onboarding />} />
+            
+            {/* Public Auth Routes */}
+            <Route path="/welcome" element={<Welcome />} />
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/register" element={<Register />} />
+            
+            {/* Profile Setup - Protected but separate route */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/auth/profile-setup" element={<ProfileSetup />} />
+            </Route>
+            
+            {/* Protected App Routes - requires login */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/app" element={<MobileLayout />}>
+                {/* Default route - redireciona para home */}
+                <Route index element={<Navigate to="/app/home" replace />} />
+                
+                {/* Bottom Navigation Routes */}
+                <Route path="home" element={<Home />} />
+                <Route path="calc" element={<Calc />} />
+                <Route path="favoritos" element={<Favoritos />} />
+                <Route path="perfil" element={<Perfil />} />
+              </Route>
+            </Route>
 
-          {/* Onboarding */}
-          <Route path="/onboarding" element={<Onboarding />} />
-
-          {/* App Routes with Mobile Layout */}
-          <Route path="/app" element={<MobileLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="chat" element={<ChatIA />} />
-            <Route path="configuracoes" element={<Configuracoes />} />
-            <Route path="admin/metricas" element={<AdminMetricas />} />
-          </Route>
-
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+            {/* Catch all - redirect to welcome */}
+            <Route path="*" element={<Navigate to="/welcome" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

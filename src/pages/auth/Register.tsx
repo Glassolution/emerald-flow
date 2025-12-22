@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { Calculator, Mail, Lock, Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react";
+import { Calculator, Mail, Lock, Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 
-export default function Login() {
+export default function Register() {
   const navigate = useNavigate();
-  const { user, loading, signIn } = useAuth();
+  const { user, loading, signUp } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Show splash while loading
@@ -52,12 +54,16 @@ export default function Login() {
     if (password.length < 6) {
       return "A senha deve ter pelo menos 6 caracteres";
     }
+    if (password !== confirmPassword) {
+      return "As senhas não coincidem";
+    }
     return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(false);
 
     const validationError = validateForm();
     if (validationError) {
@@ -67,23 +73,35 @@ export default function Login() {
 
     setIsSubmitting(true);
 
-    const { error } = await signIn(email, password);
+    const { user, error } = await signUp(email, password);
 
     if (error) {
-      setError(error.message === "Invalid login credentials" 
-        ? "E-mail ou senha incorretos" 
-        : error.message
-      );
+      if (error.message.includes("already registered")) {
+        setError("Este e-mail já está cadastrado");
+      } else {
+        setError(error.message);
+      }
       setIsSubmitting(false);
     } else {
-      // Verificar se o perfil está completo antes de redirecionar
-      const { isProfileComplete } = await import("@/lib/userProfile");
-      const profileComplete = await isProfileComplete();
-      
-      if (profileComplete) {
-        navigate("/app/home", { replace: true });
+      // Se o Supabase fez login automático (user existe), verificar perfil
+      if (user) {
+        setIsSubmitting(false);
+        // Verificar se o perfil está completo
+        const { isProfileComplete } = await import("@/lib/userProfile");
+        const profileComplete = await isProfileComplete();
+        
+        if (profileComplete) {
+          navigate("/app/home", { replace: true });
+        } else {
+          navigate("/auth/profile-setup", { replace: true });
+        }
       } else {
-        navigate("/auth/profile-setup", { replace: true });
+        // Caso contrário, mostra sucesso e redireciona para login
+        setSuccess(true);
+        setIsSubmitting(false);
+        setTimeout(() => {
+          navigate("/auth/login", { replace: true });
+        }, 2000);
       }
     }
   };
@@ -102,15 +120,26 @@ export default function Login() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col px-6 pt-4 pb-8">
+      <div className="flex-1 flex flex-col px-6 pt-2 pb-8 overflow-y-auto">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-4 shadow-lg shadow-green-500/20">
             <Calculator size={32} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Bem-vindo de volta</h1>
-          <p className="text-gray-500 text-sm mt-1">Entre para continuar</p>
+          <h1 className="text-2xl font-bold text-white">Criar conta</h1>
+          <p className="text-gray-500 text-sm mt-1">Comece a usar o Calc</p>
         </div>
+
+        {/* Success Message */}
+        {success && (
+          <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center gap-3">
+            <CheckCircle size={20} className="text-green-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm text-green-400 font-medium">Conta criada!</p>
+              <p className="text-xs text-green-400/70">Redirecionando...</p>
+            </div>
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -121,7 +150,7 @@ export default function Login() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}
           <div className="space-y-2">
             <label className="text-sm text-gray-400 font-medium">E-mail</label>
@@ -133,7 +162,7 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 className="w-full h-14 pl-12 pr-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-gray-600 focus:outline-none focus:border-green-500/50 focus:bg-white/[0.07] transition-all"
-                disabled={isSubmitting}
+                disabled={isSubmitting || success}
                 autoComplete="email"
               />
             </div>
@@ -148,10 +177,10 @@ export default function Login() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Mínimo 6 caracteres"
                 className="w-full h-14 pl-12 pr-12 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-gray-600 focus:outline-none focus:border-green-500/50 focus:bg-white/[0.07] transition-all"
-                disabled={isSubmitting}
-                autoComplete="current-password"
+                disabled={isSubmitting || success}
+                autoComplete="new-password"
               />
               <button
                 type="button"
@@ -163,34 +192,52 @@ export default function Login() {
             </div>
           </div>
 
+          {/* Confirm Password */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400 font-medium">Confirmar senha</label>
+            <div className="relative">
+              <Lock size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repita a senha"
+                className="w-full h-14 pl-12 pr-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-gray-600 focus:outline-none focus:border-green-500/50 focus:bg-white/[0.07] transition-all"
+                disabled={isSubmitting || success}
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || success}
             className="w-full h-14 bg-green-500 text-white font-semibold rounded-2xl hover:bg-green-600 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Entrando...
+                Criando...
               </span>
             ) : (
-              "Entrar"
+              "Criar conta"
             )}
           </button>
         </form>
 
         {/* Spacer */}
-        <div className="flex-1" />
+        <div className="flex-1 min-h-4" />
 
-        {/* Register Link */}
-        <p className="text-center text-gray-400 text-sm">
-          Não tem conta?{" "}
-          <Link to="/auth/register" className="text-green-400 font-semibold">
-            Criar conta
+        {/* Login Link */}
+        <p className="text-center text-gray-400 text-sm mt-6">
+          Já tem conta?{" "}
+          <Link to="/auth/login" className="text-green-400 font-semibold">
+            Entrar
           </Link>
         </p>
       </div>
     </div>
   );
 }
+

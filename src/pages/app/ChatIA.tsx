@@ -14,7 +14,7 @@ const initialMessages: Message[] = [
   {
     id: "1",
     role: "assistant",
-    content: "Olá! Sou o assistente IA do ELO. Como posso ajudar você hoje? Posso responder perguntas sobre o seu negócio, criar relatórios, ou auxiliar em tarefas do dia a dia.",
+    content: "Olá! Sou o assistente IA do Calc. Como posso ajudar você hoje? Posso responder perguntas sobre o seu negócio, criar relatórios, ou auxiliar em tarefas do dia a dia.",
     timestamp: new Date()
   }
 ];

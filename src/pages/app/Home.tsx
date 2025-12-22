@@ -1,38 +1,58 @@
 import { useState } from "react";
-import { Search, SlidersHorizontal, Heart, Star, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, SlidersHorizontal, Heart, Star, ArrowRight, Calculator, Droplets, Plane } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const categories = ["Todos", "Automação", "Equipe", "Relatórios", "Vendas"];
+const categories = ["Todos", "Cálculos", "Receitas", "Favoritos"];
+
+const quickActions = [
+  {
+    id: 1,
+    title: "Calculadora de Calda",
+    description: "Calcule a mistura ideal",
+    icon: Calculator,
+    path: "/app/calc",
+    color: "bg-primary",
+  },
+  {
+    id: 2,
+    title: "Histórico",
+    description: "Últimos cálculos",
+    icon: Droplets,
+    path: "/app/favoritos",
+    color: "bg-blue-500",
+  },
+];
 
 const featuredCard = {
   id: 1,
-  title: "Dashboard Pro",
-  subtitle: "Produtividade",
-  image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80",
+  title: "Pulverização Agrícola",
+  subtitle: "Drones",
+  image: "https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=800&auto=format&fit=crop&q=80",
   rating: 5.0,
   reviews: 143,
-  tag: "Popular",
+  tag: "Novo",
 };
 
-export default function Dashboard() {
+export default function Home() {
   const [category, setCategory] = useState("Todos");
   const [isFavorite, setIsFavorite] = useState(false);
 
   return (
-    <div className="space-y-6 pt-4">
+    <div className="space-y-6 pt-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[20px] font-bold text-[#1a1a1a]">Olá, Carlos</h1>
+          <h1 className="text-[20px] font-bold text-[#1a1a1a]">Olá, Piloto</h1>
           <p className="text-[12px] text-[#8a8a8a]">Bem-vindo ao Calc</p>
         </div>
-        <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-100">
+        <Link to="/app/perfil" className="w-11 h-11 rounded-full overflow-hidden bg-gray-100">
           <img
             src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80"
             alt="Avatar"
             className="w-full h-full object-cover"
           />
-        </div>
+        </Link>
       </div>
 
       {/* Search Bar */}
@@ -41,7 +61,7 @@ export default function Dashboard() {
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8a8a8a]" />
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Buscar receitas, cálculos..."
             className="w-full h-11 pl-10 pr-4 bg-white rounded-full text-[14px] text-[#1a1a1a] placeholder:text-[#8a8a8a] focus:outline-none shadow-sm"
           />
         </div>
@@ -50,9 +70,29 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 gap-3">
+        {quickActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link
+              key={action.id}
+              to={action.path}
+              className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-3", action.color)}>
+                <Icon size={20} className="text-white" />
+              </div>
+              <h3 className="text-[14px] font-semibold text-[#1a1a1a]">{action.title}</h3>
+              <p className="text-[12px] text-[#8a8a8a]">{action.description}</p>
+            </Link>
+          );
+        })}
+      </div>
+
       {/* Section Title */}
       <h2 className="text-[15px] font-semibold text-[#1a1a1a] -mb-3">
-        Selecione sua categoria
+        Categorias
       </h2>
 
       {/* Category Chips */}
@@ -76,7 +116,7 @@ export default function Dashboard() {
       {/* Hero Card */}
       <div className="relative rounded-[24px] overflow-hidden shadow-xl">
         {/* Background Image */}
-        <div className="relative h-[280px]">
+        <div className="relative h-[240px]">
           <img
             src={featuredCard.image}
             alt={featuredCard.title}
@@ -100,6 +140,11 @@ export default function Dashboard() {
             />
           </button>
 
+          {/* Drone Icon */}
+          <div className="absolute top-4 left-4 w-10 h-10 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center">
+            <Plane size={18} className="text-white" />
+          </div>
+
           {/* Content */}
           <div className="absolute bottom-0 left-0 right-0 p-4">
             {/* Tag */}
@@ -122,20 +167,21 @@ export default function Dashboard() {
                 </span>
               </div>
               <span className="text-[10px] text-white/80">
-                {featuredCard.reviews} reviews
+                {featuredCard.reviews} usuários
               </span>
             </div>
           </div>
         </div>
 
-        {/* See More Button */}
-        <div className="bg-[#1a1a1a] px-4 py-3 flex items-center justify-between">
-          <span className="text-white text-[13px] font-medium">Ver mais</span>
-          <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center">
-            <ArrowRight size={16} className="text-[#1a1a1a]" />
+        {/* CTA Button */}
+        <Link to="/app/calc" className="bg-[#1a1a1a] px-4 py-3 flex items-center justify-between">
+          <span className="text-white text-[13px] font-medium">Abrir Calculadora</span>
+          <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center">
+            <ArrowRight size={16} className="text-white" />
           </div>
-        </div>
+        </Link>
       </div>
     </div>
   );
 }
+

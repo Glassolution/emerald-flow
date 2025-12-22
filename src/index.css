@@ -1,14 +1,15 @@
+/* Calc Mobile-First Design System */
+@import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ELO Mobile-First Design System */
-@import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
-
 @layer base {
   :root {
     /* Core Colors - Clean & Minimal */
-    --background: 0 0% 98%;
+    /* Base - Black */
+    --background: 0 0% 100%;
     --foreground: 0 0% 8%;
 
     --card: 0 0% 100%;
@@ -17,8 +18,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 8%;
 
-    /* Primary - Deep Black */
-    --primary: 0 0% 8%;
+    /* Primary - Green (Primary Action Color) */
+    --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary - Soft Gray */
@@ -29,8 +30,8 @@
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
 
-    /* Accent - Emerald Green */
-    --accent: 145 60% 50%;
+    /* Accent - Green (Actions & Highlights) */
+    --accent: 142 71% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -42,18 +43,18 @@
 
     --radius: 1rem;
 
-    /* Sidebar - Dark Theme */
+    /* Sidebar - Dark Theme (Black Base) */
     --sidebar-background: 0 0% 5%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 145 60% 50%;
+    --sidebar-primary: 142 71% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 12%;
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 145 60% 50%;
+    --sidebar-ring: 142 71% 45%;
 
     /* Custom Tokens */
-    --success: 145 60% 42%;
+    --success: 142 71% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 5%;
@@ -93,7 +94,7 @@
     --muted: 0 0% 16%;
     --muted-foreground: 0 0% 55%;
 
-    --accent: 145 60% 50%;
+    --accent: 142 71% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;

@@ -89,9 +89,9 @@ export function DashboardSidebar() {
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-              <span className="text-sidebar-primary-foreground font-bold text-lg">E</span>
+              <span className="text-sidebar-primary-foreground font-bold text-lg">C</span>
             </div>
-            <span className="font-bold text-lg text-sidebar-foreground">ELO</span>
+            <span className="font-bold text-lg text-sidebar-foreground">Calc</span>
           </div>
         )}
         <Button

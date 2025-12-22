@@ -150,7 +150,7 @@ export default function Ajuda() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild>
-                <a href="mailto:suporte@elo.com.br">
+                <a href="mailto:suporte@calc.com.br">
                   <MessageCircle size={20} />
                   Enviar mensagem
                 </a>
