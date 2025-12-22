@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Home, Calculator, Heart, User } from "lucide-react";
+import { Home, Calculator, Package, Heart, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "/app/home", icon: Home, label: "Home" },
   { path: "/app/calc", icon: Calculator, label: "Calc" },
+  { path: "/app/produtos", icon: Package, label: "Produtos" },
   { path: "/app/favoritos", icon: Heart, label: "Favoritos" },
   { path: "/app/perfil", icon: User, label: "Perfil" },
 ];

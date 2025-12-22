@@ -34,8 +34,14 @@ export default function SplashPage() {
           };
           checkProfile();
         } else {
-          // Se não está logado, ir para Welcome
-          navigate("/welcome", { replace: true });
+          // Se não está logado, verificar se é primeira vez
+          if (!firstRunDone) {
+            // Primeira vez: ir para Onboarding
+            navigate("/onboarding", { replace: true });
+          } else {
+            // Já passou pelo onboarding: ir para Welcome
+            navigate("/welcome", { replace: true });
+          }
         }
       }, 100);
     }, 3000);
@@ -57,8 +63,14 @@ export default function SplashPage() {
           };
           checkProfile();
         } else {
-          // Se não está logado, ir para Welcome
-          navigate("/welcome", { replace: true });
+          // Se não está logado, verificar se é primeira vez
+          if (!firstRunDone) {
+            // Primeira vez: ir para Onboarding
+            navigate("/onboarding", { replace: true });
+          } else {
+            // Já passou pelo onboarding: ir para Welcome
+            navigate("/welcome", { replace: true });
+          }
         }
       }, 300);
     }, 2000);

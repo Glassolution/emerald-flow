@@ -145,3 +145,4 @@ export function formatCalculationDate(timestamp: string): string {
     return timestamp;
   }
 }
+

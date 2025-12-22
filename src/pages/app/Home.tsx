@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getUserProfile, UserProfile } from "@/lib/userProfile";
 import { getSavedCalculations, toggleFavorite, formatCalculationDate, type SavedCalculation } from "@/lib/calcHistory";
 import { useToast } from "@/hooks/use-toast";
+import { Avatar } from "@/components/profile/Avatar";
 import dronePainelImg from "@/assets/drone painel 1.webp";
 
 const categories = ["Todos", "Cálculos", "Receitas", "Favoritos"];
@@ -68,13 +69,7 @@ export default function Home() {
           <h1 className="text-[20px] font-bold text-[#1a1a1a]">Olá, {userName}</h1>
           <p className="text-[12px] text-[#8a8a8a]">Bem-vindo ao Calc</p>
         </div>
-        <Link to="/app/perfil" className="w-11 h-11 rounded-full overflow-hidden bg-gray-100">
-          <img
-            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80"
-            alt="Avatar"
-            className="w-full h-full object-cover"
-          />
-        </Link>
+        <Avatar linkTo="/app/perfil" size="md" />
       </div>
 
       {/* Search Bar */}

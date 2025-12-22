@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { SplashScreen } from "@/components/ui/SplashScreen";
-import { FIRST_RUN_KEY } from "@/pages/SplashPage";
 
 export default function Welcome() {
   const { user, loading } = useAuth();
@@ -21,16 +20,6 @@ export default function Welcome() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Verificar se é primeira vez e redirecionar para onboarding
-  useEffect(() => {
-    if (!loading && !user) {
-      const firstRunDone = localStorage.getItem(FIRST_RUN_KEY) === "true";
-      if (!firstRunDone) {
-        // Primeira vez: redirecionar para onboarding
-        navigate("/onboarding", { replace: true });
-      }
-    }
-  }, [loading, user, navigate]);
 
   // Show loading only if still loading AND not forced to show
   if (loading && !forceShow) {

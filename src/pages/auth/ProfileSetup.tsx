@@ -5,6 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { saveUserProfile, UserProfile } from "@/lib/userProfile";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { Logo } from "@/components/Logo";
+import { AvatarPicker } from "@/components/profile/AvatarPicker";
+import { getAvatarUrl } from "@/lib/avatarService";
 
 export default function ProfileSetup() {
   const navigate = useNavigate();
@@ -17,6 +19,18 @@ export default function ProfileSetup() {
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Carregar avatar existente (se houver)
+  useEffect(() => {
+    const loadAvatar = async () => {
+      if (user) {
+        const url = await getAvatarUrl();
+        setAvatarUrl(url);
+      }
+    };
+    loadAvatar();
+  }, [user]);
 
   // Mostrar splash screen inicial
   useEffect(() => {
@@ -134,6 +148,26 @@ export default function ProfileSetup() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Foto do Perfil (Opcional) */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400 font-medium flex items-center gap-2">
+              <User size={16} />
+              Foto do Perfil
+              <span className="text-xs text-gray-500">(opcional)</span>
+            </label>
+            <div className="flex justify-center py-4">
+              <AvatarPicker
+                avatarUrl={avatarUrl}
+                onAvatarChange={setAvatarUrl}
+                size="lg"
+                showControls={true}
+              />
+            </div>
+            <p className="text-xs text-gray-500 text-center">
+              JPG, PNG ou WEBP. Máximo 3MB.
+            </p>
+          </div>
+
           {/* Nome da Empresa */}
           <div className="space-y-2">
             <label className="text-sm text-gray-400 font-medium flex items-center gap-2">

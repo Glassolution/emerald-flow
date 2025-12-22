@@ -67,9 +67,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
         setSession(session);
+        // Salvar userId no localStorage para fallback
+        if (user?.id) {
+          localStorage.setItem("calc_user_id", user.id);
+        }
       } else {
         setSession(session);
         setUser(session?.user ?? null);
+        // Salvar userId no localStorage para fallback
+        if (session?.user?.id) {
+          localStorage.setItem("calc_user_id", session.user.id);
+        } else {
+          localStorage.removeItem("calc_user_id");
+        }
       }
     });
 
@@ -90,6 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setTimeout(() => {
           setSession(session);
           setUser(session?.user ?? null);
+          // Salvar userId no localStorage para fallback
+          if (session?.user?.id) {
+            localStorage.setItem("calc_user_id", session.user.id);
+          } else {
+            localStorage.removeItem("calc_user_id");
+          }
           setLoading(false);
           console.log("✅ [AuthContext] Auth state initialized");
         }, remainingTime);

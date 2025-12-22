@@ -1,106 +1,169 @@
-import { useState } from "react";
-import { Calculator, Plus, Trash2, Save, RotateCcw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { Calculator, RotateCcw, AlertCircle, CheckCircle2, Plus, Trash2, Package, Heart, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   calculateCalda,
-  type CalculationInput,
   type CalculationResult,
-  type Product,
   type ProductUnit,
+  type Product as CalcProduct,
+  type CalculationInput,
 } from "@/lib/calcUtils";
-import { incrementCalculations, addHectares, incrementSavedCalculations } from "@/lib/userStats";
-import { saveCalculation } from "@/lib/calcHistory";
+import { produtosAgricolas, type Product } from "@/lib/products";
+import { Badge } from "@/components/ui/badge";
+import { saveCalculation } from "@/lib/favoritesService";
+import { useToast } from "@/hooks/use-toast";
+
+interface LocationState {
+  produtoSelecionado?: Product;
+}
+
+interface ProdutoNoCalculo {
+  id: string;
+  nome: string;
+  dose: number;
+  unidade: ProductUnit;
+  produtoOriginal?: Product; // Referência ao produto do catálogo
+}
+
+const coresPorTipo: Record<string, string> = {
+  Herbicida: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+  Inseticida: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  Fungicida: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  Fertilizante: "bg-green-500/10 text-green-500 border-green-500/20",
+};
 
 export default function Calc() {
+  const location = useLocation();
+  const state = location.state as LocationState | null;
   const { toast } = useToast();
-  
+
   // Estados dos campos principais
   const [areaHa, setAreaHa] = useState<string>("");
   const [litrosPorHa, setLitrosPorHa] = useState<string>("");
   const [volumeTanque, setVolumeTanque] = useState<string>("");
-  
-  // Estados dos produtos
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: "1",
-      name: "Produto 1",
-      dose: 0,
-      unit: "mL",
-    },
-  ]);
-  
-  // Estado de erros
-  const [errors, setErrors] = useState<string[] | null>(null);
-  
-  // Estado do resultado
-  const [result, setResult] = useState<CalculationResult | null>(null);
 
-  // Adicionar novo produto
-  const addProduct = () => {
-    setProducts([
-      ...products,
-      {
-        id: Date.now().toString(),
-        name: `Produto ${products.length + 1}`,
-        dose: 0,
-        unit: "mL",
-      },
-    ]);
+  // Estado da lista de produtos
+  const [produtos, setProdutos] = useState<ProdutoNoCalculo[]>([]);
+
+  // Estado do dialog de seleção de produtos
+  const [dialogAberto, setDialogAberto] = useState(false);
+  
+  // Estado de salvamento
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Preencher quando um produto é selecionado via navegação
+  useEffect(() => {
+    if (state?.produtoSelecionado) {
+      const produto = state.produtoSelecionado;
+      adicionarProdutoDoCatalogo(produto);
+      // Limpar o state após usar
+      window.history.replaceState({}, document.title);
+    }
+  }, [state]);
+
+  // Adicionar produto do catálogo
+  const adicionarProdutoDoCatalogo = (produto: Product) => {
+    const novoProduto: ProdutoNoCalculo = {
+      id: Date.now().toString(),
+      nome: produto.nome,
+      dose: produto.dosePadrao,
+      unidade: produto.unidade,
+      produtoOriginal: produto,
+    };
+    setProdutos([...produtos, novoProduto]);
+    setDialogAberto(false);
+  };
+
+  // Adicionar produto manual
+  const adicionarProdutoManual = () => {
+    const novoProduto: ProdutoNoCalculo = {
+      id: Date.now().toString(),
+      nome: `Produto ${produtos.length + 1}`,
+      dose: 0,
+      unidade: "mL",
+    };
+    setProdutos([...produtos, novoProduto]);
   };
 
   // Remover produto
-  const removeProduct = (id: string) => {
-    if (products.length > 1) {
-      setProducts(products.filter((p, idx) => (p.id || idx.toString()) !== id));
-    }
+  const removerProduto = (id: string) => {
+    setProdutos(produtos.filter((p) => p.id !== id));
   };
 
   // Atualizar produto
-  const updateProduct = (id: string, field: keyof Product, value: any) => {
-    setProducts(
-      products.map((p, idx) => {
-        const productId = p.id || idx.toString();
-        return productId === id ? { ...p, [field]: value } : p;
-      })
+  const atualizarProduto = (id: string, campo: keyof ProdutoNoCalculo, valor: any) => {
+    setProdutos(
+      produtos.map((p) => (p.id === id ? { ...p, [campo]: valor } : p))
     );
   };
 
+  // Estado de erro
+  const [error, setError] = useState<string | null>(null);
+
+  // Estado do resultado
+  const [result, setResult] = useState<CalculationResult | null>(null);
+
   // Calcular
   const handleCalculate = () => {
+    setError(null);
+    setResult(null);
+
     const area = parseFloat(areaHa);
     const taxa = parseFloat(litrosPorHa);
     const tanque = parseFloat(volumeTanque);
 
-    const input: CalculationInput = {
+    // Validar campos principais
+    if (!area || area <= 0) {
+      setError("Preencha Área, L/ha e Tanque corretamente.");
+      return;
+    }
+
+    if (!taxa || taxa <= 0) {
+      setError("Preencha Área, L/ha e Tanque corretamente.");
+      return;
+    }
+
+    if (!tanque || tanque <= 0) {
+      setError("Preencha Área, L/ha e Tanque corretamente.");
+      return;
+    }
+
+    if (produtos.length === 0) {
+      setError("Adicione pelo menos um produto.");
+      return;
+    }
+
+    // Converter produtos para o formato da função de cálculo
+    const produtosParaCalculo: CalcProduct[] = produtos.map((p) => ({
+      id: p.id,
+      name: p.nome,
+      dose: p.dose,
+      unit: p.unidade,
+    }));
+
+    const calculation = calculateCalda({
       areaHa: area,
       taxaLHa: taxa,
       volumeTanqueL: tanque,
-      products,
-    };
+      products: produtosParaCalculo,
+    });
 
-    const calculation = calculateCalda(input);
-    
     if (calculation.result) {
       setResult(calculation.result);
-      setErrors(null);
-      
-      // Registrar cálculo e hectares
-      incrementCalculations().catch(console.error);
-      addHectares(area).catch(console.error);
     } else {
-      setErrors(calculation.errors.messages);
-      setResult(null);
-      
-      toast({
-        title: "Verifique os dados",
-        description: calculation.errors.messages[0],
-        variant: "destructive",
-      });
+      setError(calculation.errors.messages[0] || "Erro ao calcular.");
     }
   };
 
@@ -109,50 +172,63 @@ export default function Calc() {
     setAreaHa("");
     setLitrosPorHa("");
     setVolumeTanque("");
-    setProducts([
-      {
-        id: "1",
-        name: "Produto 1",
-        dose: 0,
-        unit: "mL",
-      },
-    ]);
+    setProdutos([]);
     setResult(null);
-    setErrors(null);
+    setError(null);
+  };
+
+  // Gerar texto final com múltiplos produtos
+  const gerarTextoFinal = (): string => {
+    if (!result) return "";
+
+    const linhasProdutos = result.produtos.map(
+      (p) => `- Coloque ${p.produtoPorTanque} ${p.unit} de ${p.nome}`
+    );
+
+    return `Para cada tanque do drone:\n${linhasProdutos.join("\n")}\n- Complete com água até fechar ${volumeTanque} litros do tanque.`;
   };
 
   // Salvar cálculo
-  const handleSave = () => {
-    if (!result) {
+  const handleSaveCalculation = async () => {
+    if (!result) return;
+
+    setIsSaving(true);
+
+    // Converter produtos para o formato CalculationInput
+    const produtosParaCalculo: CalcProduct[] = produtos.map((p) => ({
+      id: p.id,
+      name: p.nome,
+      dose: p.dose,
+      unit: p.unidade,
+    }));
+
+    const input: CalculationInput = {
+      areaHa: parseFloat(areaHa),
+      taxaLHa: parseFloat(litrosPorHa),
+      volumeTanqueL: parseFloat(volumeTanque),
+      products: produtosParaCalculo,
+    };
+
+    const { id, error } = await saveCalculation(input, result);
+
+    setIsSaving(false);
+
+    if (error) {
       toast({
         title: "Erro",
-        description: "Calcule primeiro antes de salvar",
+        description: error.message || "Erro ao salvar cálculo.",
         variant: "destructive",
       });
-      return;
+    } else if (id) {
+      toast({
+        title: "Cálculo salvo com sucesso",
+        description: "O cálculo foi adicionado aos favoritos.",
+      });
     }
-
-    saveCalculation({
-      input: {
-        areaHa: parseFloat(areaHa),
-        taxaLHa: parseFloat(litrosPorHa),
-        volumeTanqueL: parseFloat(volumeTanque),
-        products,
-      },
-      result,
-      isFavorite: false,
-    });
-
-    incrementSavedCalculations().catch(console.error);
-
-    toast({
-      title: "Salvo!",
-      description: "Cálculo salvo com sucesso",
-    });
   };
 
   return (
-    <div className="pt-4">
+    <div className="pt-4 pb-24">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
@@ -168,7 +244,7 @@ export default function Calc() {
       <div className="space-y-4 mb-6">
         <div>
           <Label htmlFor="area" className="text-[13px] font-medium text-foreground mb-2 block">
-            Área a aplicar (hectares)
+            Área (hectares)
           </Label>
           <Input
             id="area"
@@ -183,7 +259,7 @@ export default function Calc() {
 
         <div>
           <Label htmlFor="taxa" className="text-[13px] font-medium text-foreground mb-2 block">
-            Litros por hectare
+            Litros por hectare (L/ha)
           </Label>
           <Input
             id="taxa"
@@ -198,7 +274,7 @@ export default function Calc() {
 
         <div>
           <Label htmlFor="tanque" className="text-[13px] font-medium text-foreground mb-2 block">
-            Volume do tanque (litros)
+            Volume do tanque (L)
           </Label>
           <Input
             id="tanque"
@@ -212,95 +288,165 @@ export default function Calc() {
         </div>
       </div>
 
-      {/* Produtos */}
+      {/* Seção de Produtos */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[15px] font-semibold text-foreground">Produtos</h2>
-          <Button
-            onClick={addProduct}
-            size="sm"
-            variant="outline"
-            className="h-8 text-[12px]"
-          >
-            <Plus size={14} className="mr-1" />
-            Adicionar
-          </Button>
+          <Label className="text-[13px] font-medium text-foreground">
+            Produtos ({produtos.length})
+          </Label>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setDialogAberto(true)}
+              variant="outline"
+              size="sm"
+              className="h-9 text-[12px]"
+            >
+              <Package size={14} className="mr-1" />
+              Do catálogo
+            </Button>
+            <Button
+              onClick={adicionarProdutoManual}
+              variant="outline"
+              size="sm"
+              className="h-9 text-[12px]"
+            >
+              <Plus size={14} className="mr-1" />
+              Manual
+            </Button>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          {products.map((product, index) => (
-            <Card key={product.id || index} className="p-4 bg-card border-border">
-              <div className="flex items-center justify-between mb-3">
-                <Input
-                  value={product.name || ""}
-                  onChange={(e) => updateProduct(product.id || index.toString(), "name", e.target.value)}
-                  placeholder={`Produto ${index + 1}`}
-                  className="h-8 text-[13px] font-medium bg-transparent border-0 p-0 focus-visible:ring-0"
-                />
-                {products.length > 1 && (
+        {/* Lista de Produtos */}
+        <div className="space-y-3">
+          {produtos.map((produto) => (
+            <Card key={produto.id} className="p-4 bg-card border-border">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Input
+                      value={produto.nome}
+                      onChange={(e) => atualizarProduto(produto.id, "nome", e.target.value)}
+                      placeholder="Nome do produto"
+                      className="h-8 text-[13px] font-medium bg-transparent border-0 p-0 focus-visible:ring-0"
+                    />
+                    {produto.produtoOriginal && (
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] px-1.5 py-0 ${coresPorTipo[produto.produtoOriginal.tipo] || ""}`}
+                      >
+                        {produto.produtoOriginal.tipo}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label className="text-[11px] text-muted-foreground mb-1 block">
+                        Dose por hectare
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Ex: 200"
+                        value={produto.dose || ""}
+                        onChange={(e) =>
+                          atualizarProduto(produto.id, "dose", parseFloat(e.target.value) || 0)
+                        }
+                        className="h-9 rounded-xl bg-muted border-transparent text-[13px]"
+                      />
+                    </div>
+                    <div className="w-20">
+                      <Label className="text-[11px] text-muted-foreground mb-1 block">
+                        Unidade
+                      </Label>
+                      <Select
+                        value={produto.unidade}
+                        onValueChange={(value: ProductUnit) =>
+                          atualizarProduto(produto.id, "unidade", value)
+                        }
+                      >
+                        <SelectTrigger className="h-9 rounded-xl bg-muted border-transparent text-[13px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mL">mL</SelectItem>
+                          <SelectItem value="L">L</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                {produtos.length > 1 && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
-                    onClick={() => removeProduct(product.id || index.toString())}
+                    className="h-8 w-8 flex-shrink-0"
+                    onClick={() => removerProduto(produto.id)}
                   >
                     <Trash2 size={14} className="text-destructive" />
                   </Button>
                 )}
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-[11px] text-muted-foreground mb-1 block">
-                    Dose por hectare
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Ex: 200"
-                    value={product.dose || ""}
-                    onChange={(e) =>
-                      updateProduct(product.id || index.toString(), "dose", parseFloat(e.target.value) || 0)
-                    }
-                    className="h-10 rounded-xl bg-muted border-transparent text-[13px]"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-[11px] text-muted-foreground mb-1 block">Unidade</Label>
-                  <Select
-                    value={product.unit}
-                    onValueChange={(value: ProductUnit) =>
-                      updateProduct(product.id || index.toString(), "unit", value)
-                    }
-                  >
-                    <SelectTrigger className="h-10 rounded-xl bg-muted border-transparent text-[13px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mL">mL</SelectItem>
-                      <SelectItem value="L">L</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
             </Card>
           ))}
+
+          {produtos.length === 0 && (
+            <div className="text-center py-8 border-2 border-dashed border-border rounded-2xl">
+              <Package size={32} className="mx-auto text-muted-foreground mb-2" />
+              <p className="text-[12px] text-muted-foreground">
+                Nenhum produto adicionado. Adicione produtos do catálogo ou manualmente.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Mensagens de erro */}
-      {errors && errors.length > 0 && (
+      {/* Dialog de Seleção de Produtos */}
+      <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
+        <DialogContent className="max-w-md max-h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4">
+            <DialogTitle>Selecionar Produto do Catálogo</DialogTitle>
+            <DialogDescription>
+              Escolha um produto para adicionar ao cálculo com as especificações já preenchidas.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
+            <div className="space-y-2">
+              {produtosAgricolas.map((produto) => (
+                <Card
+                  key={produto.id}
+                  className="p-3 cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors"
+                  onClick={() => adicionarProdutoDoCatalogo(produto)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <p className="text-[14px] font-semibold">{produto.nome}</p>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] px-2 py-0 ${coresPorTipo[produto.tipo] || ""}`}
+                        >
+                          {produto.tipo}
+                        </Badge>
+                      </div>
+                      <p className="text-[12px] text-muted-foreground">
+                        Dose: {produto.dosePadrao} {produto.unidade}/ha
+                      </p>
+                    </div>
+                    <Plus size={18} className="text-primary flex-shrink-0 ml-2" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Mensagem de erro */}
+      {error && (
         <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl">
           <div className="flex items-start gap-2">
             <AlertCircle size={18} className="text-destructive mt-0.5" />
-            <div className="flex-1">
-              <ul className="space-y-1">
-                {errors.map((msg, idx) => (
-                  <li key={idx} className="text-[12px] text-destructive">{msg}</li>
-                ))}
-              </ul>
-            </div>
+            <p className="text-[13px] text-destructive flex-1">{error}</p>
           </div>
         </div>
       )}
@@ -313,74 +459,94 @@ export default function Calc() {
         >
           Calcular
         </Button>
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            onClick={handleClear}
-            variant="outline"
-            className="h-12 text-[14px] font-semibold rounded-full"
-          >
-            <RotateCcw size={16} className="mr-2" />
-            Novo
-          </Button>
-          <Button
-            onClick={handleSave}
-            variant="outline"
-            className="h-12 text-[14px] font-semibold rounded-full"
-            disabled={!result}
-          >
-            <Save size={16} className="mr-2" />
-            Salvar
-          </Button>
-        </div>
+        {result && (
+          <>
+            <Button
+              onClick={handleSaveCalculation}
+              disabled={isSaving}
+              className="w-full h-12 bg-green-500 text-white text-[14px] font-semibold rounded-full hover:bg-green-600"
+            >
+              {isSaving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Heart size={16} className="mr-2 fill-white" />
+                  Salvar cálculo
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleClear}
+              variant="outline"
+              className="w-full h-12 text-[14px] font-semibold rounded-full"
+            >
+              <RotateCcw size={16} className="mr-2" />
+              Novo cálculo
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Resultado */}
       {result && (
-        <Card className="p-5 bg-primary text-primary-foreground mb-6">
+        <Card className="p-5 bg-black text-white mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <CheckCircle2 size={20} />
-            <h3 className="text-[18px] font-bold">Resultado</h3>
+            <CheckCircle2 size={20} className="text-green-500" />
+            <h3 className="text-[18px] font-bold text-white">Resultado</h3>
           </div>
 
           <div className="space-y-4">
             {/* PASSO 1 */}
-            <div className="bg-primary-foreground/10 rounded-xl p-4">
-              <p className="text-[11px] uppercase tracking-wide opacity-70 mb-1">Volume total de calda</p>
-              <p className="text-[24px] font-bold">{result.volumeTotalL} L</p>
-              <p className="text-[11px] opacity-70 mt-1">
-                {areaHa} ha × {litrosPorHa} L/ha = {result.volumeTotalL} litros
+            <div className="bg-white/5 rounded-xl p-4">
+              <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
+                PASSO 1 — Volume total de calda
+              </p>
+              <p className="text-[24px] font-bold text-white">{result.volumeTotalL} L</p>
+              <p className="text-[11px] text-white/70 mt-1">
+                {areaHa} ha × {litrosPorHa} L/ha = {result.volumeTotalL} L
               </p>
             </div>
 
             {/* PASSO 2 */}
-            <div className="bg-primary-foreground/10 rounded-xl p-4">
-              <p className="text-[11px] uppercase tracking-wide opacity-70 mb-1">Quantidade de tanques</p>
-              <p className="text-[24px] font-bold">{result.numeroTanques} tanques</p>
-              <p className="text-[11px] opacity-70 mt-1">
+            <div className="bg-white/5 rounded-xl p-4">
+              <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
+                PASSO 2 — Número de tanques
+              </p>
+              <p className="text-[24px] font-bold text-white">{result.numeroTanques} tanques</p>
+              <p className="text-[11px] text-white/70 mt-1">
                 {result.volumeTotalL} L ÷ {volumeTanque} L = {result.numeroTanques} tanques
               </p>
             </div>
 
-            {/* PASSO 3 e 4 - Produtos */}
+            {/* PASSO 3 e 4 — Produtos */}
             {result.produtos.map((produto, idx) => (
-              <div key={idx} className="bg-primary-foreground/10 rounded-xl p-4">
-                <p className="text-[13px] font-semibold mb-3">{produto.nome}</p>
-                
+              <div key={idx} className="bg-white/5 rounded-xl p-4">
+                <p className="text-[13px] font-semibold mb-3 text-white">{produto.nome}</p>
+
                 <div className="space-y-3">
                   <div>
-                    <p className="text-[11px] uppercase tracking-wide opacity-70 mb-1">Total no trabalho</p>
-                    <p className="text-[20px] font-bold">{produto.totalProduto} {produto.unit}</p>
-                    <p className="text-[11px] opacity-70 mt-1">
-                      {areaHa} ha × {produto.doseHa} {produto.unit}/ha
+                    <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
+                      PASSO 3 — Produto total no trabalho
+                    </p>
+                    <p className="text-[20px] font-bold text-white">
+                      {produto.totalProduto} {produto.unit}
+                    </p>
+                    <p className="text-[11px] text-white/70 mt-1">
+                      {areaHa} ha × {produto.doseHa} {produto.unit}/ha = {produto.totalProduto} {produto.unit}
                     </p>
                   </div>
-                  
-                  <div className="pt-3 border-t border-primary-foreground/20">
-                    <p className="text-[11px] uppercase tracking-wide opacity-70 mb-1">Por tanque</p>
-                    <p className="text-[24px] font-bold text-primary-foreground">
+
+                  <div className="pt-3 border-t border-white/20">
+                    <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
+                      PASSO 4 — Produto por tanque
+                    </p>
+                    <p className="text-[24px] font-bold text-green-500">
                       {produto.produtoPorTanque} {produto.unit}
                     </p>
-                    <p className="text-[11px] opacity-70 mt-1">
+                    <p className="text-[11px] text-white/70 mt-1">
                       {produto.totalProduto} {produto.unit} ÷ {result.numeroTanques} tanques
                     </p>
                   </div>
@@ -388,19 +554,12 @@ export default function Calc() {
               </div>
             ))}
 
-            {/* Instrução final */}
-            <div className="bg-primary-foreground/20 rounded-xl p-4 mt-4">
-              <p className="text-[13px] font-semibold mb-2">Para cada tanque do drone:</p>
-              <ul className="space-y-1">
-                {result.produtos.map((produto, idx) => (
-                  <li key={idx} className="text-[12px]">
-                    • Coloque {produto.produtoPorTanque} {produto.unit} de {produto.nome}
-                  </li>
-                ))}
-                <li className="text-[12px] mt-2">
-                  • Complete com água até {volumeTanque} litros
-                </li>
-              </ul>
+            {/* RESULTADO FINAL */}
+            <div className="bg-white/10 rounded-xl p-4 mt-4 border-2 border-green-500/30">
+              <p className="text-[14px] font-bold mb-3 text-white">RESULTADO FINAL</p>
+              <p className="text-[13px] leading-relaxed whitespace-pre-line text-white">
+                {gerarTextoFinal()}
+              </p>
             </div>
           </div>
         </Card>

@@ -1,0 +1,252 @@
+/**
+ * Tela de Detalhes do Cálculo Salvo
+ * Mostra todos os dados do cálculo de forma didática
+ */
+
+import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Calculator, Trash2, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { CheckCircle2 } from "lucide-react";
+import { getSavedCalculations, deleteCalculation, formatCalculationDate, type SavedCalculationData } from "@/lib/favoritesService";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+
+export default function CalculationDetails() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [calculation, setCalculation] = useState<SavedCalculationData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const loadCalculation = async () => {
+      if (!id) {
+        navigate("/app/favoritos", { replace: true });
+        return;
+      }
+
+      const calculations = await getSavedCalculations();
+      const found = calculations.find((calc) => calc.id === id);
+
+      if (!found) {
+        toast({
+          title: "Cálculo não encontrado",
+          description: "Este cálculo não existe mais.",
+          variant: "destructive",
+        });
+        navigate("/app/favoritos", { replace: true });
+        return;
+      }
+
+      setCalculation(found);
+    };
+
+    loadCalculation();
+  }, [id, navigate, toast]);
+
+  const handleDelete = async () => {
+    if (!calculation || !confirm("Tem certeza que deseja excluir este cálculo dos favoritos?")) {
+      return;
+    }
+
+    setIsDeleting(true);
+    const { error } = await deleteCalculation(calculation.id);
+
+    setIsDeleting(false);
+
+    if (error) {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao excluir cálculo.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Excluído",
+        description: "Cálculo removido dos favoritos.",
+      });
+      navigate("/app/favoritos", { replace: true });
+    }
+  };
+
+  const handleRefazer = () => {
+    if (!calculation) return;
+    
+    // Navegar para calculadora com dados pré-preenchidos (opcional)
+    navigate("/app/calc", { 
+      state: { 
+        restoreCalculation: {
+          areaHa: calculation.input.areaHa,
+          taxaLHa: calculation.input.taxaLHa,
+          volumeTanqueL: calculation.input.volumeTanqueL,
+          products: calculation.input.products,
+        }
+      }
+    });
+  };
+
+  if (!calculation) {
+    return (
+      <div className="pt-4 pb-24">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="w-12 h-12 border-2 border-gray-300 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Carregando...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const { input, result } = calculation;
+
+  // Gerar texto final
+  const gerarTextoFinal = (): string => {
+    const linhasProdutos = result.produtos.map(
+      (p) => `- Coloque ${p.produtoPorTanque} ${p.unit} de ${p.nome}`
+    );
+
+    return `Para cada tanque do drone:\n${linhasProdutos.join("\n")}\n- Complete com água até fechar ${input.volumeTanqueL} litros do tanque.`;
+  };
+
+  return (
+    <div className="pt-4 pb-24">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/app/favoritos")}
+          className="h-10 w-10"
+        >
+          <ArrowLeft size={20} />
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-[20px] font-bold text-foreground">Detalhes do Cálculo</h1>
+          <p className="text-[12px] text-muted-foreground">
+            {formatCalculationDate(calculation.timestamp)}
+          </p>
+        </div>
+      </div>
+
+      {/* Título do Cálculo */}
+      <Card className="p-4 mb-6 bg-card">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+            <Calculator size={20} className="text-primary-foreground" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-[16px] font-semibold text-foreground">{calculation.title}</h2>
+            <p className="text-[12px] text-muted-foreground">
+              {formatCalculationDate(calculation.timestamp)}
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Dados do Cálculo */}
+      <Card className="p-5 bg-black text-white mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <CheckCircle2 size={20} className="text-green-500" />
+          <h3 className="text-[18px] font-bold text-white">Resultado</h3>
+        </div>
+
+        <div className="space-y-4">
+          {/* PASSO 1 */}
+          <div className="bg-white/5 rounded-xl p-4">
+            <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
+              PASSO 1 — Volume total de calda
+            </p>
+            <p className="text-[24px] font-bold text-white">{result.volumeTotalL} L</p>
+            <p className="text-[11px] text-white/70 mt-1">
+              {input.areaHa} ha × {input.taxaLHa} L/ha = {result.volumeTotalL} L
+            </p>
+          </div>
+
+          {/* PASSO 2 */}
+          <div className="bg-white/5 rounded-xl p-4">
+            <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
+              PASSO 2 — Número de tanques
+            </p>
+            <p className="text-[24px] font-bold text-white">{result.numeroTanques} tanques</p>
+            <p className="text-[11px] text-white/70 mt-1">
+              {result.volumeTotalL} L ÷ {input.volumeTanqueL} L = {result.numeroTanques} tanques
+            </p>
+          </div>
+
+          {/* PASSO 3 e 4 — Produtos */}
+          {result.produtos.map((produto, idx) => (
+            <div key={idx} className="bg-white/5 rounded-xl p-4">
+              <p className="text-[13px] font-semibold mb-3 text-white">{produto.nome}</p>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
+                    PASSO 3 — Produto total no trabalho
+                  </p>
+                  <p className="text-[20px] font-bold text-white">
+                    {produto.totalProduto} {produto.unit}
+                  </p>
+                  <p className="text-[11px] text-white/70 mt-1">
+                    {input.areaHa} ha × {produto.doseHa} {produto.unit}/ha = {produto.totalProduto} {produto.unit}
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-white/20">
+                  <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
+                    PASSO 4 — Produto por tanque
+                  </p>
+                  <p className="text-[24px] font-bold text-green-500">
+                    {produto.produtoPorTanque} {produto.unit}
+                  </p>
+                  <p className="text-[11px] text-white/70 mt-1">
+                    {produto.totalProduto} {produto.unit} ÷ {result.numeroTanques} tanques
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* RESULTADO FINAL */}
+          <div className="bg-white/10 rounded-xl p-4 mt-4 border-2 border-green-500/30">
+            <p className="text-[14px] font-bold mb-3 text-white">RESULTADO FINAL</p>
+            <p className="text-[13px] leading-relaxed whitespace-pre-line text-white">
+              {gerarTextoFinal()}
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Botões de Ação */}
+      <div className="space-y-3">
+        <Button
+          onClick={handleRefazer}
+          className="w-full h-12 bg-primary text-primary-foreground text-[14px] font-semibold rounded-full"
+        >
+          <RotateCcw size={16} className="mr-2" />
+          Refazer cálculo
+        </Button>
+        <Button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          variant="outline"
+          className="w-full h-12 text-[14px] font-semibold rounded-full text-destructive hover:text-destructive"
+        >
+          {isDeleting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-destructive/30 border-t-destructive rounded-full animate-spin mr-2" />
+              Excluindo...
+            </>
+          ) : (
+            <>
+              <Trash2 size={16} className="mr-2" />
+              Excluir dos favoritos
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
+

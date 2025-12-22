@@ -1,51 +1,65 @@
 import { useState, useEffect } from "react";
-import { Heart, Calculator, Trash2, Calendar, Droplets, Plane } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { Heart, Calculator, Trash2, Calendar, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  getFavoriteCalculations, 
-  toggleFavorite, 
+  getSavedCalculations,
   deleteCalculation,
   formatCalculationDate,
-  type SavedCalculation 
-} from "@/lib/calcHistory";
+  type SavedCalculationData 
+} from "@/lib/favoritesService";
 
 export default function Favoritos() {
   const { toast } = useToast();
-  const [calculations, setCalculations] = useState<SavedCalculation[]>([]);
+  const navigate = useNavigate();
+  const [calculations, setCalculations] = useState<SavedCalculationData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadFavorites();
   }, []);
 
-  const loadFavorites = () => {
-    const favorites = getFavoriteCalculations();
+  const loadFavorites = async () => {
+    setIsLoading(true);
+    const favorites = await getSavedCalculations();
     setCalculations(favorites);
+    setIsLoading(false);
   };
 
-  const handleToggleFavorite = (id: string) => {
-    const success = toggleFavorite(id, false);
-    if (success) {
-      loadFavorites();
-      toast({
-        title: "Removido dos favoritos",
-        description: "Cálculo removido dos favoritos",
-      });
-    }
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este cálculo?")) {
-      const success = deleteCalculation(id);
-      if (success) {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Evitar navegar ao clicar no botão de deletar
+    
+    if (confirm("Tem certeza que deseja excluir este cálculo dos favoritos?")) {
+      const { error } = await deleteCalculation(id);
+      
+      if (error) {
+        toast({
+          title: "Erro",
+          description: error.message || "Erro ao excluir cálculo.",
+          variant: "destructive",
+        });
+      } else {
         loadFavorites();
         toast({
           title: "Excluído",
-          description: "Cálculo excluído com sucesso",
+          description: "Cálculo removido dos favoritos.",
         });
       }
     }
   };
+
+  const handleCardClick = (id: string) => {
+    navigate(`/app/favoritos/${id}`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-20 text-center animate-fade-in pt-4">
+        <div className="w-12 h-12 border-2 border-gray-300 border-t-primary rounded-full animate-spin mb-4" />
+        <p className="text-sm text-[#8a8a8a]">Carregando favoritos...</p>
+      </div>
+    );
+  }
 
   if (calculations.length === 0) {
     return (
@@ -76,39 +90,35 @@ export default function Favoritos() {
         {calculations.map((calc) => (
           <div
             key={calc.id}
-            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100"
+            onClick={() => handleCardClick(calc.id)}
+            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:border-primary/50 hover:shadow-md transition-all active:scale-[0.98]"
           >
             {/* Header */}
             <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2 flex-1">
-                <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
                   <Calculator size={20} className="text-green-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-[14px] font-semibold text-[#1a1a1a] truncate">
-                    {calc.name || `Cálculo - ${calc.input.areaHa} ha`}
+                    {calc.title}
                   </h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <Calendar size={12} className="text-[#8a8a8a]" />
+                    <Calendar size={12} className="text-[#8a8a8a] flex-shrink-0" />
                     <span className="text-[11px] text-[#8a8a8a]">
                       {formatCalculationDate(calc.timestamp)}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 <button
-                  onClick={() => handleToggleFavorite(calc.id)}
-                  className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center hover:bg-red-100 transition-colors"
-                >
-                  <Heart size={16} className="text-red-500 fill-red-500" />
-                </button>
-                <button
-                  onClick={() => handleDelete(calc.id)}
+                  onClick={(e) => handleDelete(calc.id, e)}
                   className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
                 >
                   <Trash2 size={14} className="text-gray-600" />
                 </button>
+                <ChevronRight size={18} className="text-[#8a8a8a]" />
               </div>
             </div>
 

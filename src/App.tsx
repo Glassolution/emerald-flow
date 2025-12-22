@@ -23,7 +23,9 @@ import ProfileSetup from "@/pages/auth/ProfileSetup";
 // App Pages (Protected - Main Navigation)
 import Home from "@/pages/app/Home";
 import Calc from "@/pages/app/Calc";
+import Produtos from "@/pages/app/Produtos";
 import Favoritos from "@/pages/app/Favoritos";
+import CalculationDetails from "@/pages/app/CalculationDetails";
 import Perfil from "@/pages/app/Perfil";
 
 const queryClient = new QueryClient();
@@ -64,7 +66,9 @@ const App = () => (
                 {/* Bottom Navigation Routes */}
                 <Route path="home" element={<Home />} />
                 <Route path="calc" element={<Calc />} />
+                <Route path="produtos" element={<Produtos />} />
                 <Route path="favoritos" element={<Favoritos />} />
+                <Route path="favoritos/:id" element={<CalculationDetails />} />
                 <Route path="perfil" element={<Perfil />} />
               </Route>
             </Route>

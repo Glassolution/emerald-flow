@@ -7,8 +7,6 @@ import {
   HelpCircle,
   LogOut,
   ChevronRight,
-  Camera,
-  User as UserIcon,
   Edit2,
   Building2,
   Plane,
@@ -20,7 +18,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserProfile, UserProfile } from "@/lib/userProfile";
 import { getUserStats, UserStats } from "@/lib/userStats";
-import { uploadUserAvatar, getUserAvatarUrl, updateUserName } from "@/lib/userAvatar";
+import { updateUserName } from "@/lib/userAvatar";
+import { AvatarPicker } from "@/components/profile/AvatarPicker";
+import { getAvatarUrl } from "@/lib/avatarService";
 
 const menuItems = [
   {
@@ -53,12 +53,10 @@ export default function Perfil() {
   const { toast } = useToast();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [isSavingName, setIsSavingName] = useState(false);
@@ -80,10 +78,8 @@ export default function Perfil() {
         }
 
         // Buscar avatar
-        const avatar = await getUserAvatarUrl();
-        if (avatar) {
-          setAvatarUrl(avatar);
-        }
+        const avatar = await getAvatarUrl();
+        setAvatarUrl(avatar);
       }
     };
     fetchData();
@@ -106,58 +102,6 @@ export default function Perfil() {
     navigate("/welcome", { replace: true });
   };
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validar tipo de arquivo
-    if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Erro",
-        description: "Por favor, selecione uma imagem.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validar tamanho (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Erro",
-        description: "A imagem deve ter no máximo 5MB.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUploadingAvatar(true);
-
-    const { url, error } = await uploadUserAvatar(file);
-
-    if (error) {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao fazer upload da foto.",
-        variant: "destructive",
-      });
-    } else if (url) {
-      setAvatarUrl(url);
-      toast({
-        title: "Sucesso",
-        description: "Foto atualizada com sucesso!",
-      });
-    }
-
-    setIsUploadingAvatar(false);
-    // Limpar input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
 
   const handleSaveName = async () => {
     if (!editedName.trim()) {
@@ -218,37 +162,12 @@ export default function Perfil() {
       <div className="bg-white rounded-3xl p-6 shadow-sm">
         <div className="flex flex-col items-center">
           {/* Avatar */}
-          <div className="relative mb-4">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-400 to-green-600">
-                  <UserIcon size={40} className="text-white" />
-                </div>
-              )}
-            </div>
-            <button
-              onClick={handleAvatarClick}
-              disabled={isUploadingAvatar}
-              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#22c55e] flex items-center justify-center shadow-md hover:bg-[#16a34a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isUploadingAvatar ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Camera size={14} className="text-white" />
-              )}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="hidden"
+          <div className="mb-4">
+            <AvatarPicker
+              avatarUrl={avatarUrl}
+              onAvatarChange={setAvatarUrl}
+              size="lg"
+              showControls={true}
             />
           </div>
 
