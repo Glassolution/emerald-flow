@@ -7,6 +7,8 @@ import { FIRST_RUN_KEY } from "@/pages/SplashPage";
 const ONBOARDING_KEY = "calc_onboarding_completed";
 
 import droneAgricultureImg from "@/assets/drone-agriculture.png";
+import droneCaldaImg from "@/assets/drone-calda.png";
+import dronePrecisionImg from "@/assets/drone-precision.png";
 
 const slides = [
   {
@@ -18,14 +20,14 @@ const slides = [
   },
   {
     id: 2,
-    image: droneAgricultureImg,
+    image: droneCaldaImg,
     title: "Calculadora de Calda Inteligente",
     subtitle: "Mistura perfeita, sempre",
     description: "Calcule a quantidade exata de produto para cada tanque. Suporte a múltiplos produtos e modos de dosagem. Economia garantida.",
   },
   {
     id: 3,
-    image: droneAgricultureImg,
+    image: dronePrecisionImg,
     title: "Precisão Total",
     subtitle: "Resultados que você pode confiar",
     description: "Controle completo de área, taxa de aplicação e volume. Nunca mais desperdice produto ou tempo. 100% de precisão.",
