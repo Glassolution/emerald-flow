@@ -141,10 +141,10 @@ export default function Onboarding() {
             ))}
           </div>
 
-          {/* Continue Button */}
+          {/* Continue Button - Clean, flat, no shadow */}
           <button
             onClick={isLastSlide ? handleComplete : handleNext}
-            className="w-full h-14 bg-green-500 text-white font-semibold rounded-2xl hover:bg-green-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-2xl shadow-green-500/30"
+            className="w-full h-14 bg-[#22c55e] text-white font-semibold rounded-2xl hover:bg-[#16a34a] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
             {isLastSlide ? (
               <>
