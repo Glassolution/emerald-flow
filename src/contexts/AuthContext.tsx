@@ -56,30 +56,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }, 1500); // 1.5 seconds max
     });
 
-    // Listen for auth changes
+    // Listen for auth changes - NEVER use async callback directly to prevent deadlock
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("🔍 [AuthContext] Auth state changed:", event, session ? "Session active" : "No session");
       
-      // Se o evento for USER_UPDATED, recarregar o usuário para pegar metadata atualizado
-      if (event === "USER_UPDATED" && session?.user) {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-        setSession(session);
-        // Salvar userId no localStorage para fallback
-        if (user?.id) {
-          localStorage.setItem("calc_user_id", user.id);
-        }
+      // Update state synchronously first
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      // Save userId to localStorage for fallback
+      if (session?.user?.id) {
+        localStorage.setItem("calc_user_id", session.user.id);
       } else {
-        setSession(session);
-        setUser(session?.user ?? null);
-        // Salvar userId no localStorage para fallback
-        if (session?.user?.id) {
-          localStorage.setItem("calc_user_id", session.user.id);
-        } else {
-          localStorage.removeItem("calc_user_id");
-        }
+        localStorage.removeItem("calc_user_id");
+      }
+      
+      // If USER_UPDATED, defer the getUser call with setTimeout to prevent deadlock
+      if (event === "USER_UPDATED" && session?.user) {
+        setTimeout(() => {
+          supabase.auth.getUser().then(({ data: { user } }) => {
+            if (user) {
+              setUser(user);
+              if (user.id) {
+                localStorage.setItem("calc_user_id", user.id);
+              }
+            }
+          });
+        }, 0);
       }
     });
 
