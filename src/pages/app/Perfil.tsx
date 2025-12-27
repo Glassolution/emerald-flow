@@ -95,6 +95,11 @@ export default function Perfil() {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     await signOut();
+    
+    // Marcar que o usuário acabou de fazer logout (para mostrar Welcome)
+    // Esta flag permite que Welcome apareça apenas após logout
+    sessionStorage.setItem("calc_just_logged_out", "true");
+    
     toast({
       title: "Logout",
       description: "Você foi desconectado com sucesso.",

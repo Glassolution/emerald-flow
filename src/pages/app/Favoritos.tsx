@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, Calculator, Trash2, Calendar, ChevronRight } from "lucide-react";
+import { Heart, Calculator, Trash2, Calendar, ChevronRight, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 import { 
   getSavedCalculations,
   deleteCalculation,
@@ -12,18 +14,48 @@ import {
 export default function Favoritos() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [calculations, setCalculations] = useState<SavedCalculationData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadFavorites();
-  }, []);
+    if (user) {
+      loadFavorites();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  // Listener para recarregar quando um cálculo é salvo
+  useEffect(() => {
+    const handleCalculationSaved = () => {
+      if (user) {
+        loadFavorites();
+      }
+    };
+
+    window.addEventListener("calculationSaved", handleCalculationSaved);
+    return () => {
+      window.removeEventListener("calculationSaved", handleCalculationSaved);
+    };
+  }, [user]);
 
   const loadFavorites = async () => {
     setIsLoading(true);
-    const favorites = await getSavedCalculations();
-    setCalculations(favorites);
-    setIsLoading(false);
+    try {
+      const favorites = await getSavedCalculations();
+      console.log("📊 [Favoritos] Cálculos carregados:", favorites.length);
+      setCalculations(favorites);
+    } catch (error) {
+      console.error("❌ [Favoritos] Erro ao carregar:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar favoritos.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -83,6 +115,14 @@ export default function Favoritos() {
           <h1 className="text-[20px] font-bold text-[#1a1a1a]">Favoritos</h1>
           <p className="text-[12px] text-[#8a8a8a]">{calculations.length} cálculo{calculations.length !== 1 ? 's' : ''} favoritado{calculations.length !== 1 ? 's' : ''}</p>
         </div>
+        <button
+          onClick={loadFavorites}
+          disabled={isLoading}
+          className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50"
+          title="Recarregar"
+        >
+          <RefreshCw size={18} className={cn("text-gray-600", isLoading && "animate-spin")} />
+        </button>
       </div>
 
       {/* Calculations List */}

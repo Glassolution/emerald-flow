@@ -20,12 +20,12 @@ export default function LoadingPage() {
       return;
     }
 
-    // Se não tem usuário, redirecionar para welcome
+    // Se não tem usuário, redirecionar para login
     if (!user) {
       const timer = setTimeout(() => {
         setIsVisible(false);
         setTimeout(() => {
-          navigate("/welcome", { replace: true });
+          navigate("/auth/login", { replace: true });
         }, 300);
       }, 1500); // Mostrar splash por 1.5s
 

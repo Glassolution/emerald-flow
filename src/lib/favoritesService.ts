@@ -4,6 +4,7 @@
  */
 
 import { supabase } from "./supabaseClient";
+import { classifySupabaseError, isTableNotFoundError } from "./supabaseErrorHandler";
 import { CalculationInput, CalculationResult } from "./calcUtils";
 
 export interface SavedCalculationData {
@@ -59,13 +60,16 @@ async function saveToSupabase(
       .single();
 
     if (error) {
+      const errorInfo = classifySupabaseError(error);
+      
       // Se a tabela não existir, usar localStorage como fallback
-      if (error.message.includes("relation") || error.message.includes("does not exist")) {
+      if (isTableNotFoundError(error)) {
         console.warn("⚠️ [FavoritesService] Tabela saved_calculations não encontrada, usando localStorage");
         return { id: null, error: new Error("Tabela não configurada") };
       }
-      console.error("❌ [FavoritesService] Erro ao salvar no Supabase:", error);
-      return { id: null, error: new Error(error.message) };
+      
+      console.error("❌ [FavoritesService] Erro ao salvar no Supabase:", errorInfo);
+      return { id: null, error: new Error(errorInfo.userMessage) };
     }
 
     console.log("✅ [FavoritesService] Cálculo salvo no Supabase");
@@ -176,12 +180,13 @@ async function getFromSupabase(): Promise<{ calculations: SavedCalculationData[]
       .order("created_at", { ascending: false });
 
     if (error) {
-      if (error.message.includes("relation") || error.message.includes("does not exist")) {
+      if (isTableNotFoundError(error)) {
         console.warn("⚠️ [FavoritesService] Tabela saved_calculations não encontrada");
         return { calculations: [], error: null };
       }
-      console.error("❌ [FavoritesService] Erro ao buscar do Supabase:", error);
-      return { calculations: [], error: new Error(error.message) };
+      const errorInfo = classifySupabaseError(error);
+      console.error("❌ [FavoritesService] Erro ao buscar do Supabase:", errorInfo);
+      return { calculations: [], error: new Error(errorInfo.userMessage) };
     }
 
     // Converter dados do Supabase para formato SavedCalculationData
@@ -239,17 +244,28 @@ async function getFromLocalStorage(): Promise<SavedCalculationData[]> {
 export async function getSavedCalculations(): Promise<SavedCalculationData[]> {
   if (supabase) {
     const { calculations, error } = await getFromSupabase();
-    if (!error && calculations.length >= 0) {
+    if (!error) {
+      console.log("✅ [FavoritesService] Cálculos carregados do Supabase:", calculations.length);
       return calculations;
     }
-    // Se houver erro crítico, tentar localStorage
-    if (error && !error.message.includes("Tabela")) {
-      return [];
+    // Se houver erro de tabela não encontrada, tentar localStorage
+    if (error && isTableNotFoundError(error)) {
+      console.warn("⚠️ [FavoritesService] Tabela não encontrada, usando localStorage");
+      return await getFromLocalStorage();
+    }
+    // Se houver outro erro, tentar localStorage como fallback
+    console.warn("⚠️ [FavoritesService] Erro ao buscar do Supabase, tentando localStorage:", error);
+    const localData = await getFromLocalStorage();
+    if (localData.length > 0) {
+      console.log("✅ [FavoritesService] Cálculos carregados do localStorage:", localData.length);
+      return localData;
     }
   }
 
   // Fallback para localStorage
-  return await getFromLocalStorage();
+  const localData = await getFromLocalStorage();
+  console.log("✅ [FavoritesService] Cálculos carregados do localStorage:", localData.length);
+  return localData;
 }
 
 /**
@@ -274,12 +290,13 @@ async function deleteFromSupabase(id: string): Promise<{ error: Error | null }> 
       .eq("user_id", user.id); // Garantir que só deleta próprios cálculos
 
     if (error) {
-      if (error.message.includes("relation") || error.message.includes("does not exist")) {
+      if (isTableNotFoundError(error)) {
         console.warn("⚠️ [FavoritesService] Tabela saved_calculations não encontrada");
         return { error: null };
       }
-      console.error("❌ [FavoritesService] Erro ao deletar do Supabase:", error);
-      return { error: new Error(error.message) };
+      const errorInfo = classifySupabaseError(error);
+      console.error("❌ [FavoritesService] Erro ao deletar do Supabase:", errorInfo);
+      return { error: new Error(errorInfo.userMessage) };
     }
 
     console.log("✅ [FavoritesService] Cálculo removido do Supabase");

@@ -104,7 +104,7 @@ export default function Register() {
       {/* Header */}
       <div className="p-4 flex-shrink-0">
         <Link
-          to="/welcome"
+          to="/"
           className="inline-flex items-center gap-2 text-gray-400 hover:text-white active:text-white transition-colors"
         >
           <ArrowLeft size={20} />

@@ -123,9 +123,6 @@ export async function updateUserName(newName: string): Promise<{ error: Error | 
       return { error: new Error(error.message) };
     }
 
-    // Forçar atualização do AuthContext
-    await supabase.auth.getSession();
-
     console.log("✅ [UserAvatar] Nome atualizado com sucesso");
     return { error: null };
   } catch (err) {

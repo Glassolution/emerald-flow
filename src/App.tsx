@@ -25,8 +25,12 @@ import Home from "@/pages/app/Home";
 import Calc from "@/pages/app/Calc";
 import Produtos from "@/pages/app/Produtos";
 import Favoritos from "@/pages/app/Favoritos";
+import Calculos from "@/pages/app/Calculos";
+import Receitas from "@/pages/app/Receitas";
 import CalculationDetails from "@/pages/app/CalculationDetails";
 import Perfil from "@/pages/app/Perfil";
+import OperacoesPage from "@/pages/app/OperacoesPage";
+import OperationDetails from "@/pages/app/OperationDetails";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +73,10 @@ const App = () => (
                 <Route path="produtos" element={<Produtos />} />
                 <Route path="favoritos" element={<Favoritos />} />
                 <Route path="favoritos/:id" element={<CalculationDetails />} />
+                <Route path="calculos" element={<Calculos />} />
+                <Route path="receitas" element={<Receitas />} />
+                <Route path="operacoes" element={<OperacoesPage />} />
+                <Route path="operacoes/:id" element={<OperationDetails />} />
                 <Route path="perfil" element={<Perfil />} />
               </Route>
             </Route>

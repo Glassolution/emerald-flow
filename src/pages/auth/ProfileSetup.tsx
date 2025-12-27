@@ -25,8 +25,16 @@ export default function ProfileSetup() {
   useEffect(() => {
     const loadAvatar = async () => {
       if (user) {
-        const url = await getAvatarUrl();
-        setAvatarUrl(url);
+        try {
+          const url = await getAvatarUrl();
+          // Só atualizar se retornar uma URL válida (não exibir erro se não houver avatar)
+          if (url) {
+            setAvatarUrl(url);
+          }
+        } catch (err) {
+          // Silenciosamente ignorar erros ao carregar avatar (usuário pode não ter avatar ainda)
+          console.log("ℹ️ [ProfileSetup] Nenhum avatar encontrado ou erro ao carregar (normal para novo usuário)");
+        }
       }
     };
     loadAvatar();
@@ -90,36 +98,9 @@ export default function ProfileSetup() {
       setError(saveError.message || "Erro ao salvar perfil. Tente novamente.");
       setIsSubmitting(false);
     } else {
-      console.log("✅ [ProfileSetup] Perfil salvo, aguardando atualização...");
-      
-      // Aguardar um pouco para garantir que a atualização foi processada
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Verificar se o perfil foi salvo corretamente antes de redirecionar
-      const { isProfileComplete } = await import("@/lib/userProfile");
-      const complete = await isProfileComplete();
-      
-      console.log("🔍 [ProfileSetup] Perfil completo?", complete);
-      
-      if (complete) {
-        // Perfil completo - redirecionar para home
-        console.log("✅ [ProfileSetup] Redirecionando para /app/home");
-        navigate("/app/home", { replace: true });
-      } else {
-        // Se ainda não estiver completo, tentar novamente após mais um delay
-        console.warn("⚠️ [ProfileSetup] Perfil ainda não completo, aguardando mais...");
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const completeRetry = await isProfileComplete();
-        
-        if (completeRetry) {
-          console.log("✅ [ProfileSetup] Perfil completo após retry, redirecionando");
-          navigate("/app/home", { replace: true });
-        } else {
-          console.error("❌ [ProfileSetup] Perfil ainda não completo após retry");
-          setError("Erro ao salvar perfil. Tente recarregar a página.");
-          setIsSubmitting(false);
-        }
-      }
+      console.log("✅ [ProfileSetup] Perfil salvo com sucesso");
+      // Redirecionar imediatamente após salvar (sem delays)
+      navigate("/app/home", { replace: true });
     }
   };
 

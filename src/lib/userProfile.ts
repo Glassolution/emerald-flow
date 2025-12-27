@@ -16,14 +16,16 @@ export async function saveUserProfile(profile: UserProfile): Promise<{ error: Er
   }
 
   try {
+    // Obter usuário atual
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
-      return { error: new Error("Usuário não autenticado") };
+      console.error("❌ [UserProfile] Usuário não autenticado:", userError);
+      return { error: new Error("Usuário não autenticado. Por favor, faça login novamente.") };
     }
 
-    // Atualizar user_metadata com o perfil
-    const { data, error } = await supabase.auth.updateUser({
+    // Atualizar user_metadata com o perfil (sem delays desnecessários)
+    const { error } = await supabase.auth.updateUser({
       data: {
         company_name: profile.companyName,
         full_name: profile.fullName,
@@ -36,25 +38,6 @@ export async function saveUserProfile(profile: UserProfile): Promise<{ error: Er
       console.error("❌ [UserProfile] Erro ao salvar perfil:", error);
       return { error: new Error(error.message) };
     }
-
-    // Aguardar um pouco para garantir que a atualização foi processada
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    // Recarregar o usuário para atualizar o user_metadata
-    const { data: { user: updatedUser }, error: getUserError } = await supabase.auth.getUser();
-    
-    if (getUserError || !updatedUser) {
-      console.error("❌ [UserProfile] Erro ao recarregar usuário:", getUserError);
-      return { error: new Error("Erro ao atualizar usuário") };
-    }
-
-    // Verificar se o metadata foi atualizado
-    const metadata = updatedUser.user_metadata || {};
-    console.log("🔍 [UserProfile] Metadata após salvar:", {
-      profile_completed: metadata.profile_completed,
-      company_name: metadata.company_name,
-      full_name: metadata.full_name,
-    });
 
     console.log("✅ [UserProfile] Perfil salvo com sucesso");
     return { error: null };

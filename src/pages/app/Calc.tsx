@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { Calculator, RotateCcw, AlertCircle, CheckCircle2, Plus, Trash2, Package, Heart, Save } from "lucide-react";
+import { Calculator, RotateCcw, AlertCircle, CheckCircle2, Plus, Trash2, Package, History, Save, Plane } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,11 @@ import { produtosAgricolas, type Product } from "@/lib/products";
 import { Badge } from "@/components/ui/badge";
 import { saveCalculation } from "@/lib/favoritesService";
 import { useToast } from "@/hooks/use-toast";
+import { SelectCustomProductModal } from "@/components/calc/SelectCustomProductModal";
+import { AddProductModal } from "@/components/catalog/AddProductModal";
+import { addCustomProduct, getCustomProducts } from "@/lib/productCatalogService";
+import { useAuth } from "@/contexts/AuthContext";
+import type { ProductCategory, ProductUnit as CatalogProductUnit } from "@/types/product";
 
 interface LocationState {
   produtoSelecionado?: Product;
@@ -46,8 +52,10 @@ const coresPorTipo: Record<string, string> = {
 
 export default function Calc() {
   const location = useLocation();
+  const navigate = useNavigate();
   const state = location.state as LocationState | null;
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Estados dos campos principais
   const [areaHa, setAreaHa] = useState<string>("");
@@ -59,6 +67,12 @@ export default function Calc() {
 
   // Estado do dialog de seleção de produtos
   const [dialogAberto, setDialogAberto] = useState(false);
+  
+  // Estado do modal de produtos personalizados
+  const [customProductModalOpen, setCustomProductModalOpen] = useState(false);
+  
+  // Estado do modal de adicionar produto
+  const [addProductModalOpen, setAddProductModalOpen] = useState(false);
   
   // Estado de salvamento
   const [isSaving, setIsSaving] = useState(false);
@@ -86,15 +100,93 @@ export default function Calc() {
     setDialogAberto(false);
   };
 
-  // Adicionar produto manual
+  // Abrir modal de produtos personalizados
   const adicionarProdutoManual = () => {
+    setCustomProductModalOpen(true);
+  };
+
+  // Adicionar produto personalizado selecionado
+  const handleSelectCustomProduct = (product: {
+    nome: string;
+    dose: number;
+    unidade: ProductUnit;
+  }) => {
     const novoProduto: ProdutoNoCalculo = {
       id: Date.now().toString(),
-      nome: `Produto ${produtos.length + 1}`,
-      dose: 0,
-      unidade: "mL",
+      nome: product.nome,
+      dose: product.dose,
+      unidade: product.unidade,
     };
     setProdutos([...produtos, novoProduto]);
+    toast({
+      title: "Produto adicionado",
+      description: `${product.nome} foi adicionado ao cálculo.`,
+    });
+  };
+
+  // Abrir modal de adicionar novo produto
+  const handleAddNewProduct = () => {
+    setAddProductModalOpen(true);
+  };
+
+  // Salvar novo produto personalizado
+  const handleSaveNewProduct = async (productData: {
+    name: string;
+    category: ProductCategory;
+    description: string;
+    dose_value: number;
+    dose_unit: CatalogProductUnit;
+    dose_min?: number;
+    dose_max?: number;
+    recommendations?: string;
+    notes?: string;
+    image_url?: string;
+  }) => {
+    if (!user) {
+      toast({
+        title: "Erro",
+        description: "Você precisa estar logado para criar produtos personalizados.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { product, error } = await addCustomProduct(user.id, productData);
+      
+      if (error) {
+        toast({
+          title: "Erro",
+          description: error.message || "Erro ao salvar produto.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (product) {
+        toast({
+          title: "Produto criado",
+          description: "Produto personalizado criado com sucesso!",
+        });
+
+        // Adicionar automaticamente ao cálculo
+        const novoProduto: ProdutoNoCalculo = {
+          id: Date.now().toString(),
+          nome: product.name,
+          dose: product.dose_value,
+          unidade: product.dose_unit === "mL" || product.dose_unit === "mL/L" ? "mL" : "L",
+        };
+        setProdutos([...produtos, novoProduto]);
+        setAddProductModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Erro ao salvar produto:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar produto personalizado.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Remover produto
@@ -220,6 +312,9 @@ export default function Calc() {
         variant: "destructive",
       });
     } else if (id) {
+      // Disparar evento para recarregar cálculos nas outras páginas
+      window.dispatchEvent(new CustomEvent("calculationSaved"));
+      
       toast({
         title: "Cálculo salvo com sucesso",
         description: "O cálculo foi adicionado aos favoritos.",
@@ -400,7 +495,7 @@ export default function Calc() {
         </div>
       </div>
 
-      {/* Dialog de Seleção de Produtos */}
+      {/* Dialog de Seleção de Produtos do Catálogo */}
       <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
         <DialogContent className="max-w-md max-h-[85vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-4">
@@ -441,6 +536,23 @@ export default function Calc() {
         </DialogContent>
       </Dialog>
 
+      {/* Modal de Seleção de Produtos Personalizados */}
+      <SelectCustomProductModal
+        open={customProductModalOpen}
+        onClose={() => setCustomProductModalOpen(false)}
+        onSelectProduct={handleSelectCustomProduct}
+        onAddNew={handleAddNewProduct}
+      />
+
+      {/* Modal de Adicionar Novo Produto Personalizado */}
+      {user && (
+        <AddProductModal
+          open={addProductModalOpen}
+          onClose={() => setAddProductModalOpen(false)}
+          onSubmit={handleSaveNewProduct}
+        />
+      )}
+
       {/* Mensagem de erro */}
       {error && (
         <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl">
@@ -473,10 +585,26 @@ export default function Calc() {
                 </>
               ) : (
                 <>
-                  <Heart size={16} className="mr-2 fill-white" />
+                  <Save size={16} className="mr-2" />
                   Salvar cálculo
                 </>
               )}
+            </Button>
+            <Button
+              onClick={() => navigate("/app/favoritos")}
+              variant="outline"
+              className="w-full h-12 text-[14px] font-semibold rounded-full border-green-500/20 hover:bg-green-500/10"
+            >
+              <History size={16} className="mr-2 text-green-500" />
+              Ver histórico
+            </Button>
+            <Button
+              onClick={() => navigate("/app/operacoes")}
+              variant="outline"
+              className="w-full h-12 text-[14px] font-semibold rounded-full border-blue-500/20 hover:bg-blue-500/10"
+            >
+              <Plane size={16} className="mr-2 text-blue-500" />
+              Operações
             </Button>
             <Button
               onClick={handleClear}

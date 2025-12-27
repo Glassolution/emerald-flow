@@ -4,22 +4,49 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { SplashScreen } from "@/components/ui/SplashScreen";
+import { HAS_SEEN_ONBOARDING_KEY } from "@/pages/Onboarding";
+
+// Chave para marcar que o usuário acabou de fazer logout
+const JUST_LOGGED_OUT_KEY = "calc_just_logged_out";
 
 export default function Welcome() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [forceShow, setForceShow] = useState(false);
 
+  // Verificar se o usuário acabou de fazer logout
+  // Welcome só deve aparecer para usuários que já se logaram e fizeram logout
+  useEffect(() => {
+    if (!loading) {
+      const justLoggedOut = sessionStorage.getItem(JUST_LOGGED_OUT_KEY) === "true";
+      
+      // Se não acabou de fazer logout, redirecionar
+      // Usuários que nunca se logaram não devem ver esta página
+      if (!justLoggedOut) {
+        // Redirecionar para login (ou onboarding se primeira vez)
+        const hasSeenOnboarding = localStorage.getItem(HAS_SEEN_ONBOARDING_KEY) === "1";
+        
+        if (hasSeenOnboarding) {
+          navigate("/auth/login", { replace: true });
+        } else {
+          navigate("/onboarding", { replace: true });
+        }
+        return;
+      }
+      
+      // Limpar a flag após usar (para que não apareça novamente se recarregar)
+      sessionStorage.removeItem(JUST_LOGGED_OUT_KEY);
+    }
+  }, [loading, navigate]);
+
   // Force show content after max 1.5 seconds to prevent infinite loading
   useEffect(() => {
     const timer = setTimeout(() => {
-      console.log("⚠️ [Welcome] Force showing content after timeout");
       setForceShow(true);
     }, 1500);
 
     return () => clearTimeout(timer);
   }, []);
-
 
   // Show loading only if still loading AND not forced to show
   if (loading && !forceShow) {

@@ -105,7 +105,7 @@ async function saveAvatarUrlToProfile(avatarUrl: string): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Tentar salvar na tabela profiles primeiro
+    // Tentar salvar na tabela profiles primeiro (mais rápido)
     const { error: profileError } = await supabase
       .from("profiles")
       .upsert(
@@ -117,8 +117,8 @@ async function saveAvatarUrlToProfile(avatarUrl: string): Promise<void> {
         { onConflict: "id" }
       );
 
+    // Se a tabela não existir, usar user_metadata como fallback (sem delay)
     if (profileError) {
-      // Se a tabela não existir, usar user_metadata como fallback
       console.warn("⚠️ [AvatarService] Tabela profiles não encontrada, usando user_metadata");
       await supabase.auth.updateUser({
         data: {
@@ -128,7 +128,7 @@ async function saveAvatarUrlToProfile(avatarUrl: string): Promise<void> {
     }
   } catch (err) {
     console.error("❌ [AvatarService] Erro ao salvar URL do avatar:", err);
-    // Fallback para user_metadata
+    // Fallback silencioso para user_metadata (sem delay)
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {

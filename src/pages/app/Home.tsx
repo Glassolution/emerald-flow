@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, SlidersHorizontal, Heart, Star, ArrowRight, Calculator, Droplets, Plane, Calendar } from "lucide-react";
+import { Search, SlidersHorizontal, Heart, Star, ArrowRight, Calculator, Droplets, Plane, Calendar, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserProfile, UserProfile } from "@/lib/userProfile";
-import { getSavedCalculations, toggleFavorite, formatCalculationDate, type SavedCalculation } from "@/lib/calcHistory";
+import { getSavedCalculations, formatCalculationDate as formatDate, type SavedCalculationData } from "@/lib/favoritesService";
+import { Operacoes } from "@/components/home/Operacoes";
+import { Relatorios } from "@/components/home/Relatorios";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar } from "@/components/profile/Avatar";
+import { useNavigate } from "react-router-dom";
 import dronePainelImg from "@/assets/drone painel 1.webp";
 
-const categories = ["Todos", "Cálculos", "Receitas", "Favoritos"];
+const categories = ["Todos", "Cálculos", "Operações", "Relatórios"];
 
 const quickActions = [
   {
@@ -41,10 +44,15 @@ const featuredCard = {
 };
 
 export default function Home() {
+  const navigate = useNavigate();
   const [category, setCategory] = useState("Todos");
   const [isFavorite, setIsFavorite] = useState(false);
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  
+  // Dados para filtros
+  const [allCalculations, setAllCalculations] = useState<SavedCalculationData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -58,8 +66,45 @@ export default function Home() {
     fetchProfile();
   }, [user]);
 
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Remover category das dependências - não precisa recarregar quando muda categoria
+
+  // Listener para recarregar quando um cálculo é salvo
+  useEffect(() => {
+    const handleCalculationSaved = () => {
+      if (user) {
+        loadData();
+      }
+    };
+
+    window.addEventListener("calculationSaved", handleCalculationSaved);
+    return () => {
+      window.removeEventListener("calculationSaved", handleCalculationSaved);
+    };
+  }, [user]);
+
+  const loadData = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      // Carregar cálculos
+      const calculations = await getSavedCalculations();
+      setAllCalculations(calculations);
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Get user name
   const userName = userProfile?.fullName || "Piloto";
+
 
   return (
     <div className="space-y-6 pt-4 animate-fade-in">
@@ -107,8 +152,8 @@ export default function Home() {
         })}
       </div>
 
-      {/* Recent Calculations */}
-      <RecentCalculations />
+      {/* Recent Calculations - Mostrar apenas se categoria for "Todos" */}
+      {category === "Todos" && <RecentCalculations />}
 
       {/* Section Title */}
       <h2 className="text-[15px] font-semibold text-[#1a1a1a] -mb-3">
@@ -133,7 +178,21 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Hero Card */}
+      {/* Conteúdo Filtrado */}
+      {category === "Cálculos" && (
+        <FilteredCalculations calculations={allCalculations.slice(0, 5)} isLoading={isLoading} />
+      )}
+
+      {category === "Operações" && (
+        <Operacoes isLoading={isLoading} />
+      )}
+
+      {category === "Relatórios" && (
+        <Relatorios isLoading={isLoading} />
+      )}
+
+      {/* Hero Card - Mostrar apenas se categoria for "Todos" */}
+      {category === "Todos" && (
       <div className="relative rounded-[24px] overflow-hidden shadow-xl">
         {/* Background Image */}
         <div className="relative h-[240px]">
@@ -201,35 +260,98 @@ export default function Home() {
           </div>
         </Link>
       </div>
+      )}
+    </div>
+  );
+}
+
+// Componente para mostrar cálculos filtrados
+function FilteredCalculations({ calculations, isLoading }: { calculations: SavedCalculationData[]; isLoading: boolean }) {
+  const navigate = useNavigate();
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <div className="w-8 h-8 border-2 border-gray-300 border-t-primary rounded-full animate-spin mx-auto mb-2" />
+        <p className="text-sm text-[#8a8a8a]">Carregando cálculos...</p>
+      </div>
+    );
+  }
+
+  if (calculations.length === 0) {
+    return (
+      <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
+        <Calculator size={32} className="mx-auto text-gray-400 mb-2" />
+        <p className="text-sm text-[#8a8a8a]">Nenhum cálculo encontrado.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-[15px] font-semibold text-[#1a1a1a]">Cálculos</h2>
+        <Link to="/app/calculos" className="text-[12px] text-green-600 font-medium">
+          Ver todos
+        </Link>
+      </div>
+      {calculations.map((calc) => (
+        <div
+          key={calc.id}
+          onClick={() => navigate(`/app/favoritos/${calc.id}`)}
+          className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                <Calculator size={16} className="text-green-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium text-[#1a1a1a] truncate">
+                  {calc.title}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Calendar size={10} className="text-[#8a8a8a]" />
+                  <span className="text-[10px] text-[#8a8a8a]">
+                    {formatDate(calc.timestamp)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-[#8a8a8a] flex-shrink-0 ml-2" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
 // Componente para mostrar cálculos recentes
 function RecentCalculations() {
-  const { toast } = useToast();
-  const [recentCalculations, setRecentCalculations] = useState<SavedCalculation[]>([]);
+  const navigate = useNavigate();
+  const [recentCalculations, setRecentCalculations] = useState<SavedCalculationData[]>([]);
 
   useEffect(() => {
-    const all = getSavedCalculations();
-    setRecentCalculations(all.slice(0, 3)); // Mostrar apenas os 3 mais recentes
-  }, []);
+    const loadRecent = async () => {
+      try {
+        const all = await getSavedCalculations();
+        setRecentCalculations(all.slice(0, 3)); // Mostrar apenas os 3 mais recentes
+      } catch (error) {
+        console.error("Erro ao carregar cálculos recentes:", error);
+      }
+    };
+    loadRecent();
 
-  const handleToggleFavorite = (id: string) => {
-    const calc = recentCalculations.find(c => c.id === id);
-    const newFavoriteStatus = !calc?.isFavorite;
-    const success = toggleFavorite(id, newFavoriteStatus);
-    if (success) {
-      const all = getSavedCalculations();
-      setRecentCalculations(all.slice(0, 3));
-      toast({
-        title: newFavoriteStatus ? "Adicionado aos favoritos" : "Removido dos favoritos",
-        description: newFavoriteStatus 
-          ? "Cálculo adicionado aos favoritos" 
-          : "Cálculo removido dos favoritos",
-      });
-    }
-  };
+    // Listener para recarregar quando um cálculo é salvo
+    const handleCalculationSaved = () => {
+      loadRecent();
+    };
+
+    window.addEventListener("calculationSaved", handleCalculationSaved);
+    return () => {
+      window.removeEventListener("calculationSaved", handleCalculationSaved);
+    };
+  }, []);
 
   if (recentCalculations.length === 0) {
     return null;
@@ -247,7 +369,8 @@ function RecentCalculations() {
         {recentCalculations.map((calc) => (
           <div
             key={calc.id}
-            className="bg-white rounded-xl p-3 shadow-sm border border-gray-100"
+            onClick={() => navigate(`/app/favoritos/${calc.id}`)}
+            className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -256,32 +379,17 @@ function RecentCalculations() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium text-[#1a1a1a] truncate">
-                    {calc.name || `${calc.input.areaHa} ha - ${calc.result.volumeTotalL.toFixed(1)} L`}
+                    {calc.title}
                   </p>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <Calendar size={10} className="text-[#8a8a8a]" />
                     <span className="text-[10px] text-[#8a8a8a]">
-                      {formatCalculationDate(calc.timestamp)}
+                      {formatDate(calc.timestamp)}
                     </span>
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => handleToggleFavorite(calc.id)}
-                className={cn(
-                  "w-7 h-7 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ml-2",
-                  calc.isFavorite
-                    ? "bg-red-50 hover:bg-red-100"
-                    : "bg-gray-100 hover:bg-gray-200"
-                )}
-              >
-                <Heart 
-                  size={14} 
-                  className={cn(
-                    calc.isFavorite ? "text-red-500 fill-red-500" : "text-gray-600"
-                  )} 
-                />
-              </button>
+              <ChevronRight size={14} className="text-[#8a8a8a] flex-shrink-0 ml-2" />
             </div>
           </div>
         ))}

@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import logoCalc from "@/assets/logo-calc.png";
 import { isProfileComplete } from "@/lib/userProfile";
-
-const FIRST_RUN_KEY = "calc:firstRunDone";
+import { HAS_SEEN_ONBOARDING_KEY } from "@/pages/Onboarding";
 
 export default function SplashPage() {
   const navigate = useNavigate();
@@ -17,7 +16,7 @@ export default function SplashPage() {
       return;
     }
 
-    const firstRunDone = localStorage.getItem(FIRST_RUN_KEY) === "true";
+    const hasSeenOnboarding = localStorage.getItem(HAS_SEEN_ONBOARDING_KEY) === "1";
     
     const safetyTimeout = setTimeout(() => {
       setIsVisible(false);
@@ -35,12 +34,12 @@ export default function SplashPage() {
           checkProfile();
         } else {
           // Se não está logado, verificar se é primeira vez
-          if (!firstRunDone) {
-            // Primeira vez: ir para Onboarding
+          if (!hasSeenOnboarding) {
+            // Primeira vez: ir para Onboarding (Welcome)
             navigate("/onboarding", { replace: true });
           } else {
-            // Já passou pelo onboarding: ir para Welcome
-            navigate("/welcome", { replace: true });
+            // Já passou pelo onboarding: ir para login
+            navigate("/auth/login", { replace: true });
           }
         }
       }, 100);
@@ -64,12 +63,12 @@ export default function SplashPage() {
           checkProfile();
         } else {
           // Se não está logado, verificar se é primeira vez
-          if (!firstRunDone) {
-            // Primeira vez: ir para Onboarding
+          if (!hasSeenOnboarding) {
+            // Primeira vez: ir para Onboarding (Welcome)
             navigate("/onboarding", { replace: true });
           } else {
-            // Já passou pelo onboarding: ir para Welcome
-            navigate("/welcome", { replace: true });
+            // Já passou pelo onboarding: ir para login
+            navigate("/auth/login", { replace: true });
           }
         }
       }, 300);
@@ -139,5 +138,5 @@ export default function SplashPage() {
   );
 }
 
-export { FIRST_RUN_KEY };
+// FIRST_RUN_KEY removido - usando HAS_SEEN_ONBOARDING_KEY do Onboarding
 

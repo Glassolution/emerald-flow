@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { FIRST_RUN_KEY } from "@/pages/SplashPage";
 
-const ONBOARDING_KEY = "calc_onboarding_completed";
+// Chave para marcar que o usuário já viu o onboarding (Welcome)
+const HAS_SEEN_ONBOARDING_KEY = "calc_has_seen_onboarding";
 
 import onboarding1Img from "@/assets/onboarding-1.png";
 import onboarding2Img from "@/assets/onboarding-2.png";
@@ -36,9 +36,25 @@ const slides = [
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { completeOnboarding } = useAuth();
+  const { user, loading } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // Verificar se já viu o onboarding - se sim, redirecionar
+  useEffect(() => {
+    if (!loading) {
+      const hasSeenOnboarding = localStorage.getItem(HAS_SEEN_ONBOARDING_KEY) === "1";
+      
+      if (hasSeenOnboarding) {
+        // Já viu onboarding, redirecionar baseado no estado de autenticação
+        if (user) {
+          navigate("/app/home", { replace: true });
+        } else {
+          navigate("/auth/login", { replace: true });
+        }
+      }
+    }
+  }, [loading, user, navigate]);
 
   const handleNext = () => {
     if (currentSlide < slides.length - 1) {
@@ -51,21 +67,31 @@ export default function Onboarding() {
   };
 
   const handleComplete = () => {
-    // Mark first run as done
-    localStorage.setItem(FIRST_RUN_KEY, "true");
-    // Marcar onboarding como completo no contexto e localStorage
-    completeOnboarding();
-    // Redirecionar para Welcome (página inicial)
-    navigate("/welcome", { replace: true });
+    // Marcar que o usuário já viu o onboarding (Welcome)
+    localStorage.setItem(HAS_SEEN_ONBOARDING_KEY, "1");
+    
+    // Navegar baseado no estado de autenticação
+    if (user) {
+      // Se já está logado, ir direto para o app
+      navigate("/app/home", { replace: true });
+    } else {
+      // Se não está logado, ir para login
+      navigate("/auth/login", { replace: true });
+    }
   };
 
   const handleSkip = () => {
-    // Mark first run as done
-    localStorage.setItem(FIRST_RUN_KEY, "true");
-    // Marcar onboarding como completo
-    completeOnboarding();
-    // Redirecionar para Welcome (página inicial)
-    navigate("/welcome", { replace: true });
+    // Marcar que o usuário já viu o onboarding (Welcome)
+    localStorage.setItem(HAS_SEEN_ONBOARDING_KEY, "1");
+    
+    // Navegar baseado no estado de autenticação
+    if (user) {
+      // Se já está logado, ir direto para o app
+      navigate("/app/home", { replace: true });
+    } else {
+      // Se não está logado, ir para login
+      navigate("/auth/login", { replace: true });
+    }
   };
 
   const slide = slides[currentSlide];
@@ -180,4 +206,4 @@ export default function Onboarding() {
 }
 
 // Export the key for use in other components
-export { ONBOARDING_KEY };
+export { HAS_SEEN_ONBOARDING_KEY };
