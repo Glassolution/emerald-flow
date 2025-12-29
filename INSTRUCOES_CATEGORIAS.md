@@ -172,3 +172,5 @@ Execute a migração SQL no Supabase:
 - **RLS**: Todas as políticas RLS estão configuradas para segurança.
 
 
+
+

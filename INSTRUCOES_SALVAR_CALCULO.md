@@ -114,3 +114,5 @@ A migração `fix_saved_calculations.sql`:
    - Execute a migração novamente se necessário
 
 
+
+

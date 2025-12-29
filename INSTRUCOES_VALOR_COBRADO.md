@@ -124,3 +124,5 @@ Função criada em `src/lib/currencyUtils.ts`:
 - Filtros por período nos relatórios
 
 
+
+

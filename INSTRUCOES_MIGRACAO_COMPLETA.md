@@ -95,3 +95,5 @@ A migração `fix_products_custom_complete.sql`:
 Este arquivo contém TUDO que é necessário para criar/corrigir a tabela completamente.
 
 
+
+

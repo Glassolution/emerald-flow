@@ -85,3 +85,5 @@ A tabela `products_custom` deve ter:
 - Se as colunas não existirem, o erro será mais claro indicando qual coluna está faltando
 
 
+
+

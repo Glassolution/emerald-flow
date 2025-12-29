@@ -63,3 +63,5 @@ CREATE TRIGGER update_products_custom_updated_at
   EXECUTE FUNCTION update_updated_at_column();
 
 
+
+

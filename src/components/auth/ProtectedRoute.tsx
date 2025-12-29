@@ -7,38 +7,47 @@ import { isProfileComplete } from "@/lib/userProfile";
 export function ProtectedRoute() {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const [showContent, setShowContent] = useState(false);
   const [profileChecked, setProfileChecked] = useState(false);
   const [profileComplete, setProfileComplete] = useState(false);
-
-  // Timeout to prevent infinite loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowContent(true);
-    }, 2000); // Max 2 seconds loading
-
-    return () => clearTimeout(timer);
-  }, []);
 
   // Check profile completion when user is available
   useEffect(() => {
     if (!loading && user && !profileChecked) {
       const checkProfile = async () => {
         console.log("🔍 [ProtectedRoute] Verificando perfil do usuário...");
-        const complete = await isProfileComplete();
-        console.log("🔍 [ProtectedRoute] Perfil completo?", complete, "Path:", location.pathname);
-        setProfileComplete(complete);
-        setProfileChecked(true);
+        try {
+          const complete = await isProfileComplete();
+          console.log("🔍 [ProtectedRoute] Perfil completo?", complete, "Path:", location.pathname);
+          setProfileComplete(complete);
+        } catch (error) {
+          console.error("❌ [ProtectedRoute] Erro ao verificar perfil:", error);
+          setProfileComplete(false);
+        } finally {
+          setProfileChecked(true);
+        }
       };
       checkProfile();
+    } else if (!loading && !user) {
+      // If not loading and no user, mark as checked to allow redirect
+      setProfileChecked(true);
     }
   }, [user, loading, profileChecked, location.pathname]);
 
+  // Safety timeout: nunca ficar em loading por mais de 5 segundos
+  useEffect(() => {
+    const safetyTimeout = setTimeout(() => {
+      if (!profileChecked) {
+        console.warn("⚠️ [ProtectedRoute] Timeout de segurança, finalizando verificação de perfil");
+        setProfileChecked(true);
+      }
+    }, 5000);
+
+    return () => clearTimeout(safetyTimeout);
+  }, [profileChecked]);
+
   // Show splash screen while checking auth or profile
   if (loading || !profileChecked) {
-    if (!showContent) {
-      return <SplashScreen />;
-    }
+    return <SplashScreen />;
   }
 
   // Redirect to login if not authenticated (Welcome só aparece após logout)

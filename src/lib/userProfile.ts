@@ -87,18 +87,31 @@ export async function getUserProfile(): Promise<{ profile: UserProfile | null; e
  */
 export async function isProfileComplete(): Promise<boolean> {
   if (!supabase) {
+    console.warn("⚠️ [UserProfile] Supabase não configurado, retornando false");
     return false;
   }
 
   try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    if (error || !user) {
-      return false;
-    }
+    // Timeout de segurança: não demorar mais de 3 segundos
+    const timeoutPromise = new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        console.warn("⚠️ [UserProfile] Timeout ao verificar perfil, retornando false");
+        resolve(false);
+      }, 3000);
+    });
 
-    const metadata = user.user_metadata || {};
-    return metadata.profile_completed === true;
+    const checkPromise = (async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (error || !user) {
+        return false;
+      }
+
+      const metadata = user.user_metadata || {};
+      return metadata.profile_completed === true;
+    })();
+
+    return await Promise.race([checkPromise, timeoutPromise]);
   } catch (err) {
     console.error("❌ [UserProfile] Erro ao verificar perfil:", err);
     return false;
