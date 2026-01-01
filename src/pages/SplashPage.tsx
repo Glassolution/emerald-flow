@@ -11,60 +11,72 @@ export default function SplashPage() {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    const hasSeenOnboarding = localStorage.getItem(HAS_SEEN_ONBOARDING_KEY) === "1";
-    
-    // Função para fazer o redirecionamento
-    const doRedirect = async () => {
-      setIsVisible(false);
-      
-      // Pequeno delay para animação de fade
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Se usuário está logado, redirecionar para app
-      if (user) {
-        try {
-          const profileComplete = await isProfileComplete();
-          if (profileComplete) {
-            navigate("/app/home", { replace: true });
-          } else {
-            navigate("/auth/profile-setup", { replace: true });
-          }
-        } catch (error) {
-          console.error("❌ [SplashPage] Erro ao verificar perfil:", error);
-          // Em caso de erro, redirecionar para profile-setup
-          navigate("/auth/profile-setup", { replace: true });
-        }
-      } else {
-        // Se não está logado, verificar se é primeira vez
-        if (!hasSeenOnboarding) {
-          // Primeira vez: ir para Onboarding
-          navigate("/onboarding", { replace: true });
-        } else {
-          // Já passou pelo onboarding: ir para login
-          navigate("/auth/login", { replace: true });
-        }
-      }
-    };
-
-    // Se ainda está carregando, aguardar (mas com timeout de segurança)
+    // Se ainda está carregando, aguardar
     if (loading) {
-      // Timeout de segurança: se loading demorar mais de 3 segundos, prosseguir mesmo assim
-      const loadingTimeout = setTimeout(() => {
-        console.warn("⚠️ [SplashPage] Loading demorou muito, prosseguindo...");
-        doRedirect();
-      }, 3000);
-      
-      return () => clearTimeout(loadingTimeout);
+      return;
     }
 
-    // Se não está mais carregando, fazer o redirecionamento após um delay mínimo
-    // para mostrar a splash screen por pelo menos 1.5 segundos
-    const minDisplayTime = setTimeout(() => {
-      doRedirect();
-    }, 1500);
+    const hasSeenOnboarding = localStorage.getItem(HAS_SEEN_ONBOARDING_KEY) === "1";
+    
+    const safetyTimeout = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(() => {
+        // Se usuário está logado, redirecionar para app
+        if (user) {
+          const checkProfile = async () => {
+            const profileComplete = await isProfileComplete();
+            if (profileComplete) {
+              navigate("/app/home", { replace: true });
+            } else {
+              navigate("/auth/profile-setup", { replace: true });
+            }
+          };
+          checkProfile();
+        } else {
+          // Se não está logado, verificar se é primeira vez
+          if (!hasSeenOnboarding) {
+            // Primeira vez: ir para Onboarding
+            navigate("/onboarding", { replace: true });
+          } else {
+            // Já passou pelo onboarding: ir para Welcome (tela inicial com login Google)
+            navigate("/welcome", { replace: true });
+          }
+        }
+      }, 100);
+    }, 3000);
+    
+    const timer = setTimeout(() => {
+      clearTimeout(safetyTimeout);
+      setIsVisible(false);
+      
+      setTimeout(() => {
+        // Se usuário está logado, redirecionar para app
+        if (user) {
+          const checkProfile = async () => {
+            const profileComplete = await isProfileComplete();
+            if (profileComplete) {
+              navigate("/app/home", { replace: true });
+            } else {
+              navigate("/auth/profile-setup", { replace: true });
+            }
+          };
+          checkProfile();
+        } else {
+          // Se não está logado, verificar se é primeira vez
+          if (!hasSeenOnboarding) {
+            // Primeira vez: ir para Onboarding
+            navigate("/onboarding", { replace: true });
+          } else {
+            // Já passou pelo onboarding: ir para Welcome (tela inicial com login Google)
+            navigate("/welcome", { replace: true });
+          }
+        }
+      }, 300);
+    }, 2000);
 
     return () => {
-      clearTimeout(minDisplayTime);
+      clearTimeout(timer);
+      clearTimeout(safetyTimeout);
     };
   }, [navigate, user, loading]);
 

@@ -37,7 +37,7 @@ export function Navbar() {
               <Link to="/auth/login">Entrar</Link>
             </Button>
             <Button asChild>
-              <Link to="/auth/cadastro">Começar grátis</Link>
+              <Link to="/auth/register">Começar grátis</Link>
             </Button>
           </div>
 
@@ -83,7 +83,7 @@ export function Navbar() {
                 </Link>
               </Button>
               <Button asChild>
-                <Link to="/auth/cadastro" onClick={() => setIsOpen(false)}>
+                <Link to="/auth/register" onClick={() => setIsOpen(false)}>
                   Começar grátis
                 </Link>
               </Button>

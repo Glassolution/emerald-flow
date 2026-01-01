@@ -116,7 +116,7 @@ export default function Landing() {
           {/* CTA Buttons */}
           <div className="space-y-3">
             <Link 
-              to="/auth/cadastro"
+              to="/auth/register"
               className="flex items-center justify-center w-full h-12 bg-[#1a1a1a] text-white text-[14px] font-semibold rounded-full"
             >
               Criar conta grátis

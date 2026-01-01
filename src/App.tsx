@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 // Auth
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { RouteTransitionLoader } from "@/components/ui/RouteTransitionLoader";
 
 // Layouts
 import { MobileLayout } from "@/components/layout/MobileLayout";
@@ -41,6 +42,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <RouteTransitionLoader />
           <Routes>
             {/* Root - Splash screen decides the flow */}
             <Route path="/" element={<SplashPage />} />

@@ -13,9 +13,21 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [forceRender, setForceRender] = useState(false);
 
-  // Show splash while loading
-  if (loading) {
+  // Timeout de segurança para evitar loading infinito
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      console.warn("⚠️ [Login] Timeout de segurança atingido, forçando renderização");
+      setForceRender(true);
+    }, 1500); // 1.5 segundos
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Show splash while loading (mas com timeout de segurança)
+  // Se forceRender for true, renderizar a página mesmo com loading
+  if (loading && !forceRender) {
     return <SplashScreen />;
   }
 

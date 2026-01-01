@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { SplashScreen } from "@/components/ui/SplashScreen";
+import { RouteTransitionLoader } from "@/components/ui/RouteTransitionLoader";
 import { useEffect, useState } from "react";
 import { isProfileComplete } from "@/lib/userProfile";
 
@@ -15,16 +15,10 @@ export function ProtectedRoute() {
     if (!loading && user && !profileChecked) {
       const checkProfile = async () => {
         console.log("🔍 [ProtectedRoute] Verificando perfil do usuário...");
-        try {
-          const complete = await isProfileComplete();
-          console.log("🔍 [ProtectedRoute] Perfil completo?", complete, "Path:", location.pathname);
-          setProfileComplete(complete);
-        } catch (error) {
-          console.error("❌ [ProtectedRoute] Erro ao verificar perfil:", error);
-          setProfileComplete(false);
-        } finally {
-          setProfileChecked(true);
-        }
+        const complete = await isProfileComplete();
+        console.log("🔍 [ProtectedRoute] Perfil completo?", complete, "Path:", location.pathname);
+        setProfileComplete(complete);
+        setProfileChecked(true);
       };
       checkProfile();
     } else if (!loading && !user) {
@@ -33,21 +27,9 @@ export function ProtectedRoute() {
     }
   }, [user, loading, profileChecked, location.pathname]);
 
-  // Safety timeout: nunca ficar em loading por mais de 5 segundos
-  useEffect(() => {
-    const safetyTimeout = setTimeout(() => {
-      if (!profileChecked) {
-        console.warn("⚠️ [ProtectedRoute] Timeout de segurança, finalizando verificação de perfil");
-        setProfileChecked(true);
-      }
-    }, 5000);
-
-    return () => clearTimeout(safetyTimeout);
-  }, [profileChecked]);
-
-  // Show splash screen while checking auth or profile
+  // Show loading while checking auth or profile
   if (loading || !profileChecked) {
-    return <SplashScreen />;
+    return <RouteTransitionLoader />;
   }
 
   // Redirect to login if not authenticated (Welcome só aparece após logout)

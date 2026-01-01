@@ -5,37 +5,27 @@ import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { HAS_SEEN_ONBOARDING_KEY } from "@/pages/Onboarding";
+import { Chrome } from "lucide-react";
 
 // Chave para marcar que o usuário acabou de fazer logout
 const JUST_LOGGED_OUT_KEY = "calc_just_logged_out";
 
 export default function Welcome() {
-  const { user, loading } = useAuth();
+  const { user, loading, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [forceShow, setForceShow] = useState(false);
 
-  // Verificar se o usuário acabou de fazer logout
-  // Welcome só deve aparecer para usuários que já se logaram e fizeram logout
+  // Welcome é a tela inicial após onboarding
+  // Não redirecionar automaticamente - deixar usuário escolher
   useEffect(() => {
     if (!loading) {
-      const justLoggedOut = sessionStorage.getItem(JUST_LOGGED_OUT_KEY) === "true";
+      const hasSeenOnboarding = localStorage.getItem(HAS_SEEN_ONBOARDING_KEY) === "1";
       
-      // Se não acabou de fazer logout, redirecionar
-      // Usuários que nunca se logaram não devem ver esta página
-      if (!justLoggedOut) {
-        // Redirecionar para login (ou onboarding se primeira vez)
-        const hasSeenOnboarding = localStorage.getItem(HAS_SEEN_ONBOARDING_KEY) === "1";
-        
-        if (hasSeenOnboarding) {
-          navigate("/auth/login", { replace: true });
-        } else {
-          navigate("/onboarding", { replace: true });
-        }
+      // Se não viu onboarding ainda, redirecionar para onboarding
+      if (!hasSeenOnboarding) {
+        navigate("/onboarding", { replace: true });
         return;
       }
-      
-      // Limpar a flag após usar (para que não apareça novamente se recarregar)
-      sessionStorage.removeItem(JUST_LOGGED_OUT_KEY);
     }
   }, [loading, navigate]);
 
@@ -149,6 +139,26 @@ export default function Welcome() {
 
         {/* CTA Buttons */}
         <div className="w-full max-w-md space-y-3">
+          {/* Google Login Button */}
+          <button
+            onClick={async () => {
+              const { error } = await signInWithGoogle();
+              if (error) {
+                console.error("Erro ao fazer login com Google:", error);
+              }
+            }}
+            className="flex items-center justify-center gap-3 w-full h-16 bg-white text-[#1a1a1a] font-semibold rounded-2xl hover:bg-gray-100 active:scale-[0.98] transition-all text-lg shadow-lg"
+          >
+            <Chrome size={22} />
+            Continuar com Google
+          </button>
+
+          <div className="flex items-center gap-3 my-2">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-xs text-gray-500">ou</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
           <Link
             to="/auth/login"
             className="flex items-center justify-center gap-2 w-full h-16 bg-[#22c55e] text-white font-semibold rounded-2xl hover:bg-[#16a34a] active:scale-[0.98] transition-all text-lg"

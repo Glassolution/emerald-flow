@@ -5,6 +5,10 @@ import { supabase } from "@/lib/supabaseClient";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: { message: string } | null }>;
+  signUp: (email: string, password: string) => Promise<{ user: User | null; error: { message: string } | null }>;
+  signInWithGoogle: () => Promise<{ error: { message: string } | null }>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,30 +22,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-    
-    // Safety timeout - nunca ficar em loading por mais de 5 segundos
+    // Safety timeout to prevent infinite loading
     const safetyTimeout = setTimeout(() => {
-      if (mounted) {
-        console.warn("⚠️ [AuthContext] Timeout de segurança atingido, finalizando loading");
-        setLoading(false);
-      }
-    }, 5000);
+      setLoading(false);
+      console.warn("⚠️ [AuthContext] Loading timeout - forcing loading to false");
+    }, 5000); // 5 seconds max
 
     // Get initial session
     const getInitialSession = async () => {
       if (!supabase) {
         console.warn("⚠️ [AuthContext] Supabase client not initialized");
-        if (mounted) {
-          setLoading(false);
-        }
+        setLoading(false);
         return;
       }
 
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
         
         if (error) {
           console.error("❌ [AuthContext] Error getting session:", error);
@@ -51,44 +47,118 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } catch (error) {
         console.error("❌ [AuthContext] Error in getInitialSession:", error);
-        if (mounted) {
-          setUser(null);
-        }
+        setUser(null);
       } finally {
-        if (mounted) {
-          clearTimeout(safetyTimeout);
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
     getInitialSession();
 
     // Listen for auth state changes
-    if (!supabase) {
-      clearTimeout(safetyTimeout);
-      return;
+    let subscription: { unsubscribe: () => void } | null = null;
+    
+    if (supabase) {
+      const {
+        data: { subscription: authSubscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      });
+      
+      subscription = authSubscription;
     }
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) {
-        setUser(session?.user ?? null);
-        clearTimeout(safetyTimeout);
-        setLoading(false);
-      }
-    });
-
     return () => {
-      mounted = false;
       clearTimeout(safetyTimeout);
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 
+  const signIn = async (email: string, password: string) => {
+    if (!supabase) {
+      return { error: { message: "Supabase não configurado" } };
+    }
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      setUser(data.user);
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || "Erro ao fazer login" } };
+    }
+  };
+
+  const signUp = async (email: string, password: string) => {
+    if (!supabase) {
+      return { user: null, error: { message: "Supabase não configurado" } };
+    }
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { user: null, error };
+      }
+
+      setUser(data.user);
+      return { user: data.user, error: null };
+    } catch (error: any) {
+      return { user: null, error: { message: error.message || "Erro ao criar conta" } };
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    if (!supabase) {
+      return { error: { message: "Supabase não configurado" } };
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/loading`,
+        },
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || "Erro ao fazer login com Google" } };
+    }
+  };
+
+  const signOut = async () => {
+    if (!supabase) {
+      return;
+    }
+
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error("❌ [AuthContext] Error signing out:", error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
