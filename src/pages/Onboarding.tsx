@@ -169,32 +169,21 @@ export default function Onboarding() {
         </div>
 
         {/* Bottom Navigation Bar - White with Notch */}
-        <div className="relative bg-white rounded-t-[2.5rem] pt-10 pb-8 px-6">
-          {/* Decorative Notch - Curved indent like reference */}
+        <div className="relative bg-white rounded-t-[2.5rem] pt-8 pb-8 px-6">
+          {/* Decorative Notch - Small curved indent */}
           <div 
             className="absolute top-0 left-1/2 -translate-x-1/2"
             style={{
-              width: '140px',
-              height: '35px',
+              width: '80px',
+              height: '18px',
               background: '#22c55e',
-              borderRadius: '0 0 70px 70px',
+              borderRadius: '0 0 40px 40px',
               transform: 'translateX(-50%) translateY(-1px)',
-            }}
-          />
-          {/* White fill inside notch */}
-          <div 
-            className="absolute top-0 left-1/2 -translate-x-1/2"
-            style={{
-              width: '120px',
-              height: '28px',
-              background: 'white',
-              borderRadius: '0 0 60px 60px',
-              transform: 'translateX(-50%) translateY(6px)',
             }}
           />
 
           {/* Navigation Content */}
-          <div className="flex items-center justify-between gap-4 mt-2">
+          <div className="flex items-center justify-between gap-4">
             {/* Skip/Voltar Button - Left */}
             {isFirstSlide ? (
               <button
