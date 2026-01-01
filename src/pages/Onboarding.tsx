@@ -106,15 +106,6 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-500 via-green-500 to-green-500 relative overflow-hidden">
-      {/* Skip Button - Top Right */}
-      <div className="absolute top-6 right-6 z-20">
-        <button
-          onClick={handleSkip}
-          className="bg-white rounded-full shadow-md border border-green-100 px-4 py-2 text-green-600 text-sm font-medium hover:bg-green-50 transition-colors"
-        >
-          Pular
-        </button>
-      </div>
 
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex flex-col">
@@ -178,42 +169,59 @@ export default function Onboarding() {
         </div>
 
         {/* Bottom Navigation Bar - White with Notch */}
-        <div className="relative bg-white rounded-t-[2rem] pt-6 pb-8 px-6">
-          {/* Decorative Notch - Soft and Clean */}
+        <div className="relative bg-white rounded-t-[2.5rem] pt-10 pb-8 px-6">
+          {/* Decorative Notch - Curved indent like reference */}
           <div 
-            className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"
+            className="absolute top-0 left-1/2 -translate-x-1/2"
+            style={{
+              width: '140px',
+              height: '35px',
+              background: '#22c55e',
+              borderRadius: '0 0 70px 70px',
+              transform: 'translateX(-50%) translateY(-1px)',
+            }}
+          />
+          {/* White fill inside notch */}
+          <div 
+            className="absolute top-0 left-1/2 -translate-x-1/2"
             style={{
               width: '120px',
-              height: '30px',
+              height: '28px',
               background: 'white',
-              borderRadius: '0 0 20px 20px',
-              clipPath: 'ellipse(60px 15px at 50% 0%)',
+              borderRadius: '0 0 60px 60px',
+              transform: 'translateX(-50%) translateY(6px)',
             }}
-          ></div>
+          />
 
           {/* Navigation Content */}
-          <div className="flex items-center justify-between gap-4 mt-4">
-            {/* Voltar Button - Left */}
-            {!isFirstSlide && (
+          <div className="flex items-center justify-between gap-4 mt-2">
+            {/* Skip/Voltar Button - Left */}
+            {isFirstSlide ? (
+              <button
+                onClick={handleSkip}
+                className="flex items-center justify-center gap-2 text-green-600 font-medium border-2 border-green-500 rounded-lg px-6 py-2.5 hover:bg-green-50 transition-colors min-w-[100px]"
+              >
+                <span>Skip</span>
+              </button>
+            ) : (
               <button
                 onClick={handlePrevious}
-                className="flex items-center gap-2 text-green-600 font-medium hover:text-green-700 transition-colors px-4 py-2"
+                className="flex items-center justify-center gap-2 text-green-600 font-medium border-2 border-green-500 rounded-lg px-6 py-2.5 hover:bg-green-50 transition-colors min-w-[100px]"
               >
-                <ChevronLeft size={20} />
+                <ChevronLeft size={18} />
                 <span>Voltar</span>
               </button>
             )}
-            {isFirstSlide && <div className="w-20"></div>}
 
             {/* Progress Dots - Center */}
             <div className="flex items-center gap-2 flex-1 justify-center">
               {slides.map((_, index) => (
                 <div
                   key={index}
-                  className={`h-2 rounded-full transition-all duration-300 ${
+                  className={`rounded-full transition-all duration-300 ${
                     index === currentSlide
-                      ? "w-8 bg-green-500"
-                      : "w-2 bg-gray-300"
+                      ? "w-6 h-2 bg-green-500"
+                      : "w-2 h-2 bg-gray-300"
                   }`}
                 />
               ))}
@@ -222,19 +230,9 @@ export default function Onboarding() {
             {/* Next/Complete Button - Right */}
             <button
               onClick={isLastSlide ? handleComplete : handleNext}
-              className="bg-green-500 text-white font-semibold rounded-2xl hover:bg-green-600 active:scale-[0.98] transition-all px-6 py-3 min-w-[140px] flex items-center justify-center gap-2"
+              className="bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 active:scale-[0.98] transition-all px-6 py-2.5 min-w-[100px] flex items-center justify-center gap-2"
             >
-              {isLastSlide ? (
-                <>
-                  Começar agora
-                  <ChevronLeft size={20} className="rotate-180" />
-                </>
-              ) : (
-                <>
-                  Próximo
-                  <ChevronLeft size={20} className="rotate-180" />
-                </>
-              )}
+              {isLastSlide ? "Começar" : "Next"}
             </button>
           </div>
         </div>
