@@ -11,6 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar } from "@/components/profile/Avatar";
 import { useNavigate } from "react-router-dom";
 import dronePainelImg from "@/assets/drone painel 1.webp";
+import droneSpray1 from "@/assets/drone-spray-1.png";
+import droneSpray2 from "@/assets/drone-spray-2.png";
+import droneTractor from "@/assets/drone-tractor.png";
 
 const categories = ["Todos", "Cálculos", "Operações", "Relatórios"];
 
@@ -42,6 +45,13 @@ const featuredCard = {
   reviews: 143,
   tag: "Novo",
 };
+
+// Galeria de imagens
+const galleryImages = [
+  { id: 1, src: droneSpray1, alt: "Drone pulverizando plantação de milho" },
+  { id: 2, src: droneSpray2, alt: "Drone agrícola em ação" },
+  { id: 3, src: droneTractor, alt: "Drone e trator no campo" },
+];
 
 export default function Home() {
   const navigate = useNavigate();
@@ -260,6 +270,27 @@ export default function Home() {
           </div>
         </Link>
       </div>
+      )}
+
+      {/* Galeria de Imagens - Mostrar apenas se categoria for "Todos" */}
+      {category === "Todos" && (
+        <div className="space-y-3">
+          <h2 className="text-[15px] font-semibold text-[#1a1a1a]">Galeria</h2>
+          <div className="grid grid-cols-3 gap-2">
+            {galleryImages.map((img) => (
+              <div
+                key={img.id}
+                className="relative aspect-square rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+              >
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
