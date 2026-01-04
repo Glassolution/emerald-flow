@@ -1,49 +1,68 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { BouncingBallsLoader } from "./BouncingBallsLoader";
 
 /**
- * Componente que detecta mudanças de rota e mostra o loading durante as transições
+ * Mostra um loader curtinho durante transições de rota.
+ * Inclui um "hard timeout" para nunca ficar preso em loading em caso de loop de redirect.
  */
 export function RouteTransitionLoader() {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
-  const [prevPath, setPrevPath] = useState(() => location.pathname);
-  const [isInitialized, setIsInitialized] = useState(false);
+
+  const initializedRef = useRef(false);
+  const prevPathRef = useRef(location.pathname);
+
+  const minTimerRef = useRef<number | null>(null);
+  const hardTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Na primeira renderização, não mostrar loading
-    if (!isInitialized) {
-      setIsInitialized(true);
-      setPrevPath(location.pathname);
+    // Primeira renderização: não mostrar loader
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      prevPathRef.current = location.pathname;
       return;
     }
 
     // Se a rota mudou, mostrar loading
-    if (location.pathname !== prevPath) {
+    if (location.pathname !== prevPathRef.current) {
+      prevPathRef.current = location.pathname;
       setIsLoading(true);
-      setPrevPath(location.pathname);
 
-      // Esconder loading após um tempo mínimo (para garantir que a nova página carregou)
-      // Timeout muito curto para evitar conflito com timeouts das páginas
-      const timer = setTimeout(() => {
+      // Timer normal (curto)
+      if (minTimerRef.current) {
+        window.clearTimeout(minTimerRef.current);
+      }
+      minTimerRef.current = window.setTimeout(() => {
         setIsLoading(false);
-      }, 300); // 300ms para uma transição muito rápida
+      }, 300);
 
-      // Timeout de segurança absoluto - nunca ficar em loading por mais de 800ms
-      const safetyTimer = setTimeout(() => {
-        console.warn("⚠️ [RouteTransitionLoader] Timeout de segurança, escondendo loader");
-        setIsLoading(false);
-      }, 800);
+      // Hard timeout global: não limpar em mudanças rápidas (evita loader eterno)
+      if (hardTimerRef.current == null) {
+        hardTimerRef.current = window.setTimeout(() => {
+          console.warn("⚠️ [RouteTransitionLoader] Hard timeout - escondendo loader");
+          hardTimerRef.current = null;
+          setIsLoading(false);
+        }, 2000);
+      }
 
       return () => {
-        clearTimeout(timer);
-        clearTimeout(safetyTimer);
+        if (minTimerRef.current) {
+          window.clearTimeout(minTimerRef.current);
+          minTimerRef.current = null;
+        }
       };
     }
-  }, [location.pathname, prevPath, isInitialized]);
+  }, [location.pathname]);
+
+  // Limpar timers ao desmontar
+  useEffect(() => {
+    return () => {
+      if (minTimerRef.current) window.clearTimeout(minTimerRef.current);
+      if (hardTimerRef.current) window.clearTimeout(hardTimerRef.current);
+    };
+  }, []);
 
   if (!isLoading) return null;
-
   return <BouncingBallsLoader />;
 }
