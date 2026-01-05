@@ -15,6 +15,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, profileData?: ProfileData) => Promise<{ user: User | null; error: { message: string } | null }>;
   signInWithGoogle: () => Promise<{ error: { message: string } | null }>;
   signOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -206,8 +207,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // Força atualização do usuário do Supabase (útil após atualizar user_metadata)
+  const refreshUser = async () => {
+    if (!supabase) {
+      return;
+    }
+
+    try {
+      console.log("🔄 [AuthContext] Atualizando dados do usuário...");
+      const { data: { user: refreshedUser }, error } = await supabase.auth.getUser();
+      
+      if (error) {
+        console.error("❌ [AuthContext] Erro ao atualizar usuário:", error);
+        return;
+      }
+      
+      if (refreshedUser) {
+        console.log("✅ [AuthContext] Usuário atualizado com sucesso");
+        console.log("📍 [AuthContext] profile_completed:", refreshedUser.user_metadata?.profile_completed);
+        setUser(refreshedUser);
+      }
+    } catch (error) {
+      console.error("❌ [AuthContext] Erro ao atualizar usuário:", error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signInWithGoogle, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

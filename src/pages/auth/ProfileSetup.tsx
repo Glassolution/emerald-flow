@@ -9,7 +9,7 @@ import { getAvatarUrl } from "@/lib/avatarService";
 
 export default function ProfileSetup() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState<UserProfile>({
@@ -108,11 +108,15 @@ export default function ProfileSetup() {
       }
 
       console.log("✅ [ProfileSetup] Perfil salvo com sucesso!");
+      
+      // Atualizar o usuário no contexto para refletir o novo profile_completed
+      console.log("🔄 [ProfileSetup] Atualizando dados do usuário...");
+      await refreshUser();
+      
+      // Pequeno delay extra para garantir propagação
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       console.log("🔄 [ProfileSetup] Redirecionando para /app/home...");
-      
-      // Pequeno delay para garantir que o estado foi atualizado no Supabase
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
       navigate("/app/home", { replace: true });
     } catch (err: any) {
       console.error("❌ [ProfileSetup] Erro inesperado:", err);

@@ -22,12 +22,17 @@ export function ProtectedRoute() {
   }, []);
 
   // Check profile completion when user is available
+  // Re-verifica sempre que o user muda (inclui quando refreshUser é chamado)
   useEffect(() => {
-    if (!loading && user && !profileChecked) {
+    if (!loading && user) {
       const checkProfile = async () => {
         try {
           console.log("🔍 [ProtectedRoute] Verificando perfil do usuário...");
-          const complete = await isProfileComplete();
+          
+          // Verifica diretamente do user_metadata (mais rápido e atualizado)
+          const metadata = user.user_metadata || {};
+          const complete = metadata.profile_completed === true;
+          
           console.log("🔍 [ProtectedRoute] Perfil completo?", complete, "Path:", location.pathname);
           setProfileComplete(complete);
         } catch (err) {
@@ -41,7 +46,7 @@ export function ProtectedRoute() {
     } else if (!loading && !user) {
       setProfileChecked(true);
     }
-  }, [user, loading, profileChecked, location.pathname]);
+  }, [user, loading, location.pathname]);
 
   // Show loading while checking auth or profile (mas respeita timeout)
   if ((loading || !profileChecked) && !forceRender) {
