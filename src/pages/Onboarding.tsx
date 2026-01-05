@@ -12,22 +12,29 @@ export default function Onboarding() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    console.log("📍 [Onboarding] Componente montado");
+    console.log("📍 [Onboarding] User:", user ? "logado" : "não logado");
+    console.log("📍 [Onboarding] Loading:", loading);
     setMounted(true);
   }, []);
 
   // Se usuário já está logado, redirecionar para o app
   useEffect(() => {
     if (!loading && user) {
+      console.log("🔄 [Onboarding] Usuário logado, indo para /app/home");
       navigate("/app/home", { replace: true });
     }
   }, [loading, user, navigate]);
 
   const handleStart = () => {
     localStorage.setItem(HAS_SEEN_ONBOARDING_KEY, "1");
+    console.log("✅ [Onboarding] Marcando onboarding como visto");
+    console.log("✅ [Onboarding] Navegando para /auth/login");
     navigate("/auth/login");
   };
 
   const handleBack = () => {
+    console.log("✅ [Onboarding] Voltando para /welcome");
     navigate("/welcome", { replace: true });
   };
 
@@ -95,7 +102,7 @@ export default function Onboarding() {
           Faça login ou crie sua conta Calc para usar todos os recursos!
         </p>
 
-        {/* Botão Começar agora */}
+        {/* Botão Começar */}
         <button
           onClick={handleStart}
           className={`w-full max-w-sm py-4 px-8 bg-[#22c55e] hover:bg-[#16a34a] text-white text-base font-semibold rounded-full transition-all duration-300 ease-out active:scale-[0.98] ${
@@ -108,7 +115,7 @@ export default function Onboarding() {
             fontWeight: 600
           }}
         >
-          Começar agora
+          Começar
         </button>
       </div>
     </div>

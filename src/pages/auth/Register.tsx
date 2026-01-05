@@ -48,19 +48,25 @@ export default function Register() {
       return;
     }
     setIsSubmitting(true);
-    const { user, error } = await signUp(email, password);
+    
+    console.log("🔄 [Register] Criando conta...");
+    const { error } = await signUp(email, password);
+    
     if (error) {
+      console.error("❌ [Register] Erro ao criar conta:", error);
       setError(error.message.includes("already registered") ? "Este e-mail já está cadastrado" : error.message);
       setIsSubmitting(false);
     } else {
-      if (user) {
-        setIsSubmitting(false);
-        navigate("/loading", { replace: true });
-      } else {
-        setSuccess(true);
-        setIsSubmitting(false);
-        setTimeout(() => navigate("/auth/login", { replace: true }), 2000);
-      }
+      // Conta criada com sucesso - sempre redirecionar para login
+      console.log("✅ [Register] Conta criada com sucesso!");
+      setSuccess(true);
+      setIsSubmitting(false);
+      
+      // Redirecionar para login após 1.5 segundos
+      setTimeout(() => {
+        console.log("✅ [Register] Redirecionando para login...");
+        navigate("/auth/login", { replace: true });
+      }, 1500);
     }
   };
 
@@ -115,7 +121,7 @@ export default function Register() {
           {success && (
             <div className="flex items-center gap-2 bg-green-50 border border-green-100 text-green-600 rounded-2xl px-4 py-3 mb-4">
               <CheckCircle size={18} />
-              <span className="text-sm">Conta criada! Redirecionando...</span>
+              <span className="text-sm">Conta criada! Faça login para continuar...</span>
             </div>
           )}
 

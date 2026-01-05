@@ -4,24 +4,37 @@ import { useEffect, useState } from "react";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import droneIcon from "@/assets/tela.png";
 
+// Versão do Welcome - deve ser a mesma do SplashPage
+const WELCOME_VERSION = "v2";
+const WELCOME_STORAGE_KEY = "calc_welcome_seen_version";
+
 export default function Welcome() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
 
+  // Log inicial
   useEffect(() => {
+    console.log("📍 [Welcome] Componente montado");
+    console.log("📍 [Welcome] Welcome version:", WELCOME_VERSION);
+    console.log("📍 [Welcome] User:", user ? "logado" : "não logado");
+    console.log("📍 [Welcome] Loading:", loading);
     setMounted(true);
   }, []);
 
   // Se usuário já está logado, redirecionar para o app
   useEffect(() => {
     if (user && !loading) {
+      console.log("🔄 [Welcome] Usuário logado, verificando perfil...");
       const checkProfile = async () => {
         const { isProfileComplete } = await import("@/lib/userProfile");
         const profileComplete = await isProfileComplete();
+        console.log("📍 [Welcome] Perfil completo:", profileComplete);
         if (profileComplete) {
+          console.log("✅ [Welcome] Redirecionando para /app/home");
           navigate("/app/home", { replace: true });
         } else {
+          console.log("✅ [Welcome] Redirecionando para /auth/profile-setup");
           navigate("/auth/profile-setup", { replace: true });
         }
       };
@@ -34,6 +47,10 @@ export default function Welcome() {
   }
 
   const handleContinue = () => {
+    // Salvar que o usuário viu esta versão do Welcome
+    localStorage.setItem(WELCOME_STORAGE_KEY, WELCOME_VERSION);
+    console.log("✅ [Welcome] Marcando Welcome como visto:", WELCOME_VERSION);
+    console.log("✅ [Welcome] Navegando para /onboarding");
     navigate('/onboarding');
   };
 

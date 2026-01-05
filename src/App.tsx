@@ -13,6 +13,7 @@ import { RouteTransitionLoader } from "@/components/ui/RouteTransitionLoader";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 
 // Public Pages
+import SplashPage from "@/pages/SplashPage";
 import LoadingPage from "@/pages/LoadingPage";
 import Onboarding from "@/pages/Onboarding";
 import Welcome from "@/pages/auth/Welcome";
@@ -32,6 +33,10 @@ import Perfil from "@/pages/app/Perfil";
 import OperacoesPage from "@/pages/app/OperacoesPage";
 import OperationDetails from "@/pages/app/OperationDetails";
 
+// App version for logging
+const APP_VERSION = "2.0.0";
+console.log(`🚀 [App] Calc v${APP_VERSION} iniciando...`);
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -43,17 +48,19 @@ const App = () => (
         <BrowserRouter>
           <RouteTransitionLoader />
           <Routes>
-            {/* Root - redireciona direto para login */}
-            <Route path="/" element={<Navigate to="/auth/login" replace />} />
+            {/* Root - SplashPage com lógica de roteamento */}
+            <Route path="/" element={<SplashPage />} />
             
             {/* Loading page - aparece após login */}
             <Route path="/loading" element={<LoadingPage />} />
             
-            {/* Onboarding - for first-time users */}
+            {/* Welcome - tela inicial para novos usuários */}
+            <Route path="/welcome" element={<Welcome />} />
+            
+            {/* Onboarding - segunda tela do fluxo inicial */}
             <Route path="/onboarding" element={<Onboarding />} />
             
             {/* Public Auth Routes */}
-            <Route path="/welcome" element={<Welcome />} />
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
             
@@ -82,8 +89,8 @@ const App = () => (
               </Route>
             </Route>
 
-            {/* Catch all - redirect to login (Welcome só aparece após logout) */}
-            <Route path="*" element={<Navigate to="/auth/login" replace />} />
+            {/* Catch all - redirect to splash (decisão de rota lá) */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

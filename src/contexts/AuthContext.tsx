@@ -105,41 +105,69 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
+      console.log("🔄 [AuthContext] Criando conta...");
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          // Desabilitar confirmação de email automática no cliente
+          emailRedirectTo: undefined,
+        },
       });
 
       if (error) {
+        console.error("❌ [AuthContext] Erro no signUp:", error);
         return { user: null, error };
       }
 
-      setUser(data.user);
+      console.log("✅ [AuthContext] Conta criada com sucesso");
+      
+      // Fazer logout para forçar o usuário a fazer login manualmente
+      // Isso garante um fluxo limpo sem auto-login
+      if (data.user) {
+        console.log("🔄 [AuthContext] Fazendo logout após criar conta...");
+        await supabase.auth.signOut();
+        setUser(null);
+      }
+      
       return { user: data.user, error: null };
     } catch (error: any) {
+      console.error("❌ [AuthContext] Erro inesperado no signUp:", error);
       return { user: null, error: { message: error.message || "Erro ao criar conta" } };
     }
   };
 
   const signInWithGoogle = async () => {
     if (!supabase) {
+      console.error("❌ [GoogleAuth] Supabase não configurado");
       return { error: { message: "Supabase não configurado" } };
     }
 
     try {
+      console.log("🔄 [GoogleAuth] Iniciando OAuth com Google...");
+      console.log("📍 [GoogleAuth] Redirect URL:", `${window.location.origin}/loading`);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/loading`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
 
       if (error) {
+        console.error("❌ [GoogleAuth] Erro no OAuth:", error);
         return { error };
       }
 
+      console.log("✅ [GoogleAuth] OAuth iniciado, redirecionando para Google...");
       return { error: null };
     } catch (error: any) {
+      console.error("❌ [GoogleAuth] Erro inesperado:", error);
       return { error: { message: error.message || "Erro ao fazer login com Google" } };
     }
   };

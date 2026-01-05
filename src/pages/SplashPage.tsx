@@ -1,6 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import logoCalc from "@/assets/logo-calc.png";
+
+// Versão do Welcome - incrementar quando quiser forçar exibição novamente
+const WELCOME_VERSION = "v2";
+const WELCOME_STORAGE_KEY = "calc_welcome_seen_version";
 
 export default function SplashPage() {
   const navigate = useNavigate();
@@ -8,12 +13,21 @@ export default function SplashPage() {
   const hasRedirected = useRef(false);
   const [progress, setProgress] = useState(0);
 
+  // Log inicial
+  useEffect(() => {
+    const seenVersion = localStorage.getItem(WELCOME_STORAGE_KEY);
+    console.log("🚀 [SplashPage] Iniciando...");
+    console.log("📍 [SplashPage] Welcome version:", WELCOME_VERSION);
+    console.log("📍 [SplashPage] Seen version:", seenVersion);
+    console.log("📍 [SplashPage] Auth loading:", loading);
+    console.log("📍 [SplashPage] User:", user ? "logado" : "não logado");
+  }, []);
+
   // Animação de progresso
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) return 100;
-        // Acelera no final
         const increment = prev < 70 ? 3 : prev < 90 ? 5 : 10;
         return Math.min(100, prev + increment);
       });
@@ -22,18 +36,42 @@ export default function SplashPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Redirecionamento garantido
+  // Função de redirecionamento
+  const doRedirect = () => {
+    if (hasRedirected.current) return;
+    hasRedirected.current = true;
+
+    const seenVersion = localStorage.getItem(WELCOME_STORAGE_KEY);
+    const needsWelcome = seenVersion !== WELCOME_VERSION;
+
+    console.log("🔄 [SplashPage] Redirecionando...");
+    console.log("📍 [SplashPage] Needs Welcome:", needsWelcome);
+    console.log("📍 [SplashPage] User:", user ? "logado" : "não logado");
+
+    // Se usuário está logado
+    if (user) {
+      console.log("✅ [SplashPage] Usuário logado, indo para /app/home");
+      navigate("/app/home", { replace: true });
+      return;
+    }
+
+    // Se precisa mostrar Welcome (nova versão ou primeiro acesso)
+    if (needsWelcome) {
+      console.log("✅ [SplashPage] Mostrando Welcome (versão nova ou primeiro acesso)");
+      navigate("/welcome", { replace: true });
+      return;
+    }
+
+    // Se já viu Welcome e não está logado, vai para login
+    console.log("✅ [SplashPage] Welcome já visto, indo para /auth/login");
+    navigate("/auth/login", { replace: true });
+  };
+
+  // Safety timeout: SEMPRE redireciona após 2.5 segundos
   useEffect(() => {
-    // Safety timeout: SEMPRE redireciona após 2.5 segundos
     const safetyTimer = setTimeout(() => {
-      if (!hasRedirected.current) {
-        hasRedirected.current = true;
-        if (user) {
-          navigate("/app/home", { replace: true });
-        } else {
-          navigate("/auth/login", { replace: true });
-        }
-      }
+      console.warn("⚠️ [SplashPage] Safety timeout atingido");
+      doRedirect();
     }, 2500);
 
     return () => clearTimeout(safetyTimer);
@@ -42,84 +80,48 @@ export default function SplashPage() {
   // Redireciona quando loading terminar E progresso chegar a 100%
   useEffect(() => {
     if (loading || hasRedirected.current || progress < 100) return;
-
-    hasRedirected.current = true;
-    if (user) {
-      navigate("/app/home", { replace: true });
-    } else {
-      navigate("/auth/login", { replace: true });
-    }
+    doRedirect();
   }, [navigate, user, loading, progress]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#22c55e] via-[#16a34a] to-[#15803d] flex flex-col items-center justify-center">
-      {/* Logo container */}
-      <div className="w-24 h-24 bg-white rounded-[28px] flex items-center justify-center shadow-2xl mb-8 relative">
-        {/* Spinner animado ao redor do logo */}
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+      {/* Container central com logo e spinner */}
+      <div className="relative w-28 h-28 flex items-center justify-center">
+        {/* Spinner circular ao redor da logo */}
         <svg
-          className="absolute inset-0 w-full h-full animate-spin"
-          style={{ animationDuration: "2s" }}
-          viewBox="0 0 96 96"
+          className="absolute -inset-3 w-[calc(100%+24px)] h-[calc(100%+24px)] animate-spin"
+          style={{ animationDuration: "1.2s", animationTimingFunction: "linear" }}
+          viewBox="0 0 136 136"
         >
+          {/* Círculo de fundo (cinza claro) */}
           <circle
-            cx="48"
-            cy="48"
-            r="44"
+            cx="68"
+            cy="68"
+            r="64"
             fill="none"
-            stroke="rgba(34, 197, 94, 0.2)"
-            strokeWidth="4"
+            stroke="#E5E7EB"
+            strokeWidth="3"
           />
+          {/* Círculo animado (verde) */}
           <circle
-            cx="48"
-            cy="48"
-            r="44"
+            cx="68"
+            cy="68"
+            r="64"
             fill="none"
             stroke="#22c55e"
-            strokeWidth="4"
+            strokeWidth="3"
             strokeLinecap="round"
-            strokeDasharray="70 206"
+            strokeDasharray="100 302"
           />
         </svg>
         
-        {/* Ícone interno */}
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 2L2 7L12 12L22 7L12 2Z"
-            fill="#22c55e"
-          />
-          <path
-            d="M2 17L12 22L22 17"
-            stroke="#22c55e"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M2 12L12 17L22 12"
-            stroke="#16a34a"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-
-      {/* Nome do app */}
-      <h1 className="text-white text-3xl font-bold tracking-tight mb-2">Calc</h1>
-      <p className="text-white/70 text-sm mb-8">Pulverização Inteligente</p>
-
-      {/* Barra de progresso */}
-      <div className="w-48 h-1.5 bg-white/20 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-white rounded-full transition-all duration-100 ease-out"
-          style={{ width: `${progress}%` }}
+        {/* Logo da Calc no centro */}
+        <img 
+          src={logoCalc} 
+          alt="Calc" 
+          className="w-24 h-24 object-contain z-10 rounded-2xl"
         />
       </div>
-      
-      {/* Texto de loading */}
-      <p className="text-white/60 text-xs mt-4">
-        {progress < 100 ? "Carregando..." : "Pronto!"}
-      </p>
     </div>
   );
 }
