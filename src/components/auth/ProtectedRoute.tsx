@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { isProfileComplete } from "@/lib/userProfile";
+import { CircularLoader } from "@/components/ui/CircularLoader";
 
 export function ProtectedRoute() {
   const { user, loading } = useAuth();
@@ -44,11 +45,7 @@ export function ProtectedRoute() {
 
   // Show loading while checking auth or profile (mas respeita timeout)
   if ((loading || !profileChecked) && !forceRender) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <span className="text-gray-400 text-base animate-pulse">Carregando...</span>
-      </div>
-    );
+    return <CircularLoader />;
   }
 
   // Redirect to login if not authenticated
