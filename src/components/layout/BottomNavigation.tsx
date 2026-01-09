@@ -14,8 +14,8 @@ export function BottomNavigation() {
   const location = useLocation();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 pb-2 pt-2 safe-area-bottom z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
-      <nav className="flex items-center justify-around max-w-md mx-auto relative h-14">
+    <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 pb-2 pt-2 safe-area-bottom z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
+      <nav className="flex items-center justify-around w-full relative h-14">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
@@ -25,7 +25,7 @@ export function BottomNavigation() {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className="relative -top-5"
+                className="flex flex-col items-center relative -top-5"
               >
                 <div className={cn(
                   "w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 active:scale-90",
@@ -36,7 +36,7 @@ export function BottomNavigation() {
                   <Icon size={28} strokeWidth={3} />
                 </div>
                 <span className={cn(
-                  "absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-bold transition-colors duration-200 whitespace-nowrap",
+                  "mt-1 text-[10px] font-bold transition-colors duration-200 whitespace-nowrap",
                   isActive ? "text-primary" : "text-[#8a8a8a]"
                 )}>
                   {item.label}
