@@ -236,7 +236,7 @@ export default function Home() {
             {category === "Todos" && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-[20px] font-bold text-[#1a1a1a]">Cálculos Recentes</h2>
+                  <h2 className="text-[20px] font-bold text-[#1a1a1a]">Últimos Cálculos</h2>
                   <Link to="/app/favoritos" className="text-[14px] font-semibold text-green-600">Ver todos</Link>
                 </div>
                 <RecentCalculations />
@@ -551,7 +551,7 @@ function RecentCalculations() {
         <div
           key={calc.id}
           onClick={() => navigate(`/app/favoritos/${calc.id}`)}
-          className="bg-white rounded-[24px] p-4 shadow-sm border border-gray-50 cursor-pointer active:scale-95 transition-all"
+          className="bg-white rounded-[24px] p-4 shadow-sm border border-gray-100 cursor-pointer active:scale-95 transition-all"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 flex-1 min-w-0">
