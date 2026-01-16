@@ -56,9 +56,12 @@ export default function Planos() {
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div 
+      className="min-h-screen min-h-[100dvh] bg-background flex flex-col"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       {/* Header */}
-      <header className="px-5 pt-12 pb-6 safe-area-top">
+      <header className="px-5 pt-4 pb-6">
         <div className="flex items-center gap-4 mb-6">
           <button onClick={() => navigate(-1)} className="back-button">
             <ChevronLeft size={24} className="text-foreground" />

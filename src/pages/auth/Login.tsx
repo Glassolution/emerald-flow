@@ -75,13 +75,14 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#22c55e] relative overflow-hidden">
+    <div className="min-h-screen min-h-[100dvh] flex flex-col bg-[#22c55e] relative overflow-hidden">
       {/* Área superior verde */}
       <div className="h-[20vh] min-h-[120px] relative">
         {/* Botão voltar */}
         <button 
           onClick={handleBack}
-          className="absolute left-4 top-10 p-2 text-white/90 hover:text-white transition-colors z-10"
+          className="absolute left-4 p-2 text-white/90 hover:text-white transition-colors z-10"
+          style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
         >
           <ChevronLeft size={28} strokeWidth={2} />
         </button>

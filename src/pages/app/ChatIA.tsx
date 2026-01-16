@@ -70,7 +70,7 @@ export default function ChatIA() {
   ];
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col animate-fade-in">
+    <div className="h-[calc(100dvh-8rem)] flex flex-col animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">

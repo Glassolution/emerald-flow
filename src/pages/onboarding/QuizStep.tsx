@@ -96,7 +96,13 @@ export default function QuizStep() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-white flex flex-col">
+    <div
+      className="min-h-screen min-h-[100dvh] bg-white flex flex-col"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
       <div className="px-4 pt-6 pb-2 flex items-center justify-between relative">
         <button 
           onClick={handleBack}
@@ -112,7 +118,7 @@ export default function QuizStep() {
         <div className="w-10" />
       </div>
 
-      <div className="px-6 mt-2 mb-8">
+      <div className="px-6 mt-2 mb-6">
         <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-visible relative">
           <div 
             className="h-full bg-[#22c55e] transition-all duration-500 ease-out rounded-full relative"
@@ -123,31 +129,33 @@ export default function QuizStep() {
         </div>
       </div>
 
-      <div className="flex-1 px-6 flex flex-col pt-8 text-center">
-        <h2 className="text-[32px] font-extrabold text-[#1a1a1a] mb-3 leading-tight transition-all duration-500">
-          {stepData.title}
-        </h2>
-        <p className="text-gray-500 text-[17px] mb-12 px-4 leading-relaxed">
-          {stepData.subtitle}
-        </p>
+      <div className="flex-1 px-6 flex flex-col text-center">
+        <div className="flex-1 flex flex-col justify-center">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1a1a1a] mb-3 leading-tight transition-all duration-500">
+            {stepData.title}
+          </h2>
+          <p className="text-gray-500 text-base sm:text-lg mb-10 px-4 leading-relaxed">
+            {stepData.subtitle}
+          </p>
 
-        <div className="space-y-4">
-          {stepData.options.map((option, index) => (
-            <button
-              key={option.value}
-              onClick={() => setSelectedOption(option.value)}
-              className={`w-full p-6 text-center rounded-[20px] transition-all duration-200 ${
-                selectedOption === option.value 
-                  ? 'bg-[#1a1a1a] text-white shadow-lg' 
-                  : 'bg-[#f4f4f5] text-[#1a1a1a] hover:bg-gray-200 border-none'
-              }`}
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <span className="text-[18px] font-bold">
-                {option.label}
-              </span>
-            </button>
-          ))}
+          <div className="space-y-4">
+            {stepData.options.map((option, index) => (
+              <button
+                key={option.value}
+                onClick={() => setSelectedOption(option.value)}
+                className={`w-full p-5 sm:p-6 text-center rounded-[20px] transition-all duration-200 ${
+                  selectedOption === option.value 
+                    ? "bg-[#1a1a1a] text-white shadow-lg" 
+                    : "bg-[#f4f4f5] text-[#1a1a1a] hover:bg-gray-200 border-none"
+                }`}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <span className="text-base sm:text-lg font-bold">
+                  {option.label}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -155,10 +163,10 @@ export default function QuizStep() {
         <button
           onClick={handleNext}
           disabled={!selectedOption}
-          className={`w-full py-5 px-8 text-white text-[18px] font-bold rounded-[22px] transition-all duration-300 ${
+          className={`w-full py-4 sm:py-5 px-8 text-white text-base sm:text-lg font-bold rounded-[22px] transition-all duration-300 ${
             selectedOption 
-              ? 'bg-[#1a1a1a] hover:bg-[#2a2a2a] active:scale-[0.98] shadow-xl' 
-              : 'bg-gray-200 cursor-not-allowed text-gray-400 shadow-none'
+              ? "bg-[#1a1a1a] hover:bg-[#2a2a2a] active:scale-[0.98] shadow-xl" 
+              : "bg-gray-200 cursor-not-allowed text-gray-400 shadow-none"
           }`}
         >
           Continuar

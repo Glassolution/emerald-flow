@@ -10,7 +10,13 @@ const features = [
 
 export default function Landing() {
   return (
-    <div className="min-h-screen-safe bg-white flex flex-col">
+    <div 
+      className="min-h-screen min-h-[100dvh] bg-white flex flex-col"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)"
+      }}
+    >
       <div className="w-full flex-1 flex flex-col relative overflow-x-hidden md:max-w-[430px] md:mx-auto md:shadow-2xl md:my-8 md:rounded-[40px] md:border md:border-border">
         {/* Status Bar Spacer (Desktop Only) */}
         <div className="hidden md:flex h-12 bg-white items-center justify-center">
@@ -131,7 +137,10 @@ export default function Landing() {
         </div>
 
         {/* Bottom Navigation (Safe Area Compatible) */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl px-6 pb-8 pt-4 border-t border-gray-50">
+        <div 
+          className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl px-6 pt-4 border-t border-gray-50 z-50"
+          style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}
+        >
           <div className="bg-[#1a1a1a] rounded-full px-4 py-2 flex items-center justify-around shadow-2xl">
             <button className="p-3 active:scale-90 transition-all">
               <Home size={22} className="text-white" />

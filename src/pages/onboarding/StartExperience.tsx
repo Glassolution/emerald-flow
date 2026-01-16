@@ -17,15 +17,21 @@ export default function StartExperience() {
   }, []);
 
   const handleStart = () => {
-    navigate('/onboarding/checkout');
+    navigate('/onboarding/payment-selection');
   };
 
   const startDate = format(addDays(new Date(), 7), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
   return (
-    <div className="min-h-[100svh] bg-white flex flex-col px-6 relative">
+    <div 
+      className="min-h-screen min-h-[100dvh] bg-white flex flex-col px-6 relative"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)"
+      }}
+    >
       {/* Header Navigation */}
-      <div className="pt-6 pb-2 flex items-center justify-between">
+      <div className="pt-2 pb-2 flex items-center justify-between shrink-0">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400">
           <ChevronLeft size={24} />
         </button>
@@ -38,7 +44,7 @@ export default function StartExperience() {
       </div>
 
       {/* Main Content - Centered vertically and horizontally */}
-      <div className="flex-1 flex flex-col justify-center items-center py-4">
+      <div className="flex-1 flex flex-col justify-center items-center py-4 w-full overflow-y-auto">
         <div className="max-w-sm w-full">
           {/* Title centered with reduced font size */}
           <h1 className="text-[26px] font-[900] text-[#1a1a1a] leading-[1.1] mb-10 text-center px-2">
@@ -97,7 +103,7 @@ export default function StartExperience() {
       </div>
 
       {/* Footer Primary Button Area */}
-      <div className="pb-10 pt-2 bg-white flex flex-col items-center mt-auto">
+      <div className="pb-6 pt-2 bg-white flex flex-col items-center mt-auto shrink-0">
         {/* Seal directly above button */}
         <div className="flex items-center justify-center gap-2 mb-4">
           <ShieldCheck size={18} className="text-[#1a1a1a]" />

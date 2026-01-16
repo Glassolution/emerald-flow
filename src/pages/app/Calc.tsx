@@ -212,7 +212,12 @@ export default function Calc() {
   };
 
   return (
-    <div className="space-y-6 pb-32 animate-fade-in bg-[#fdfdfd] min-h-screen px-2">
+    <div 
+      className="space-y-6 pb-32 animate-fade-in bg-[#fdfdfd] min-h-screen min-h-[100dvh] px-2"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+      }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between pt-4">
         <div className="flex items-center gap-3">

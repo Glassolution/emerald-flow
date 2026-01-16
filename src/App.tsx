@@ -25,6 +25,7 @@ import QuizLoading from "@/pages/onboarding/QuizLoading";
 import PlanReady from "@/pages/onboarding/PlanReady";
 import StartExperience from "@/pages/onboarding/StartExperience";
 import Checkout from "@/pages/onboarding/Checkout";
+import PaymentSelection from "@/pages/onboarding/PaymentSelection";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 import ProfileSetup from "@/pages/auth/ProfileSetup";
@@ -77,6 +78,7 @@ const App = () => (
                 <Route path="/onboarding/loading" element={<QuizLoading />} />
                 <Route path="/onboarding/plan-ready" element={<PlanReady />} />
                 <Route path="/onboarding/start-experience" element={<StartExperience />} />
+                <Route path="/onboarding/payment-selection" element={<PaymentSelection />} />
                 <Route path="/onboarding/checkout" element={<Checkout />} />
                 
                 {/* Public Auth Routes */}

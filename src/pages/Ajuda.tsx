@@ -63,7 +63,7 @@ export default function Ajuda() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen min-h-[100dvh] flex flex-col">
       <Navbar />
       
       <main className="flex-1 pt-24">

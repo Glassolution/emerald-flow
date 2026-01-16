@@ -158,7 +158,12 @@ export default function Perfil() {
 
   // Sempre renderizar algo, mesmo durante loading (evita tela branca)
   return (
-    <div className="pt-4 pb-24 space-y-8 bg-white min-h-screen-safe">
+    <div 
+      className="pb-24 space-y-8 bg-white min-h-screen min-h-[100dvh]"
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top) + 1rem)"
+      }}
+    >
       {/* Top Bar */}
       <div className="flex items-center justify-between px-2">
         <h1 className="text-[24px] font-black tracking-tight text-[#1a1a1a]">Calc</h1>

@@ -95,8 +95,14 @@ export default function PlanReady() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-white flex flex-col px-6">
-      <div className="flex-1 flex flex-col items-center pt-12 pb-10 overflow-y-auto">
+    <div 
+      className="min-h-screen min-h-[100dvh] bg-white flex flex-col px-6"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)"
+      }}
+    >
+      <div className="flex-1 flex flex-col items-center pt-8 pb-10 overflow-y-auto w-full">
         {/* Ícone de Checkmark Verde */}
         <div className={`mb-6 w-16 h-16 bg-[#22c55e] rounded-full flex items-center justify-center transition-all duration-700 scale-in ${mounted ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}>
           <Check size={32} className="text-white" strokeWidth={3} />
@@ -165,7 +171,7 @@ export default function PlanReady() {
       </div>
 
       {/* Botão Fixo Inferior */}
-      <div className="pb-10 pt-4 bg-white">
+      <div className="pb-6 pt-4 bg-white shrink-0">
         <button
           onClick={() => navigate('/onboarding/start-experience')}
           className="w-full py-5 px-8 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white text-[18px] font-bold rounded-[20px] shadow-xl transition-all duration-300 active:scale-[0.98]"
