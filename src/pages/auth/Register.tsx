@@ -4,10 +4,12 @@ import { Mail, Lock, Eye, EyeOff, ChevronLeft, AlertCircle, CheckCircle, Buildin
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/contexts/I18nContext";
 
 export default function Register() {
   const navigate = useNavigate();
   const { user, loading, signUp } = useAuth();
+  const { t } = useI18n();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,13 +34,13 @@ export default function Register() {
   }, [user, loading, navigate]);
 
   const validateForm = (): string | null => {
-    if (!fullName.trim()) return "Informe seu nome";
-    if (!company.trim()) return "Informe o nome da empresa";
-    if (!email.trim()) return "Digite seu e-mail";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "E-mail inválido";
-    if (!password) return "Digite sua senha";
-    if (password.length < 6) return "A senha deve ter pelo menos 6 caracteres";
-    if (password !== confirmPassword) return "As senhas não coincidem";
+    if (!fullName.trim()) return t('auth.errors.nameRequired');
+    if (!company.trim()) return t('auth.errors.companyRequired');
+    if (!email.trim()) return t('auth.errors.emailRequired');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return t('auth.errors.emailInvalid');
+    if (!password) return t('auth.errors.passwordRequired');
+    if (password.length < 6) return t('auth.errors.passwordLength');
+    if (password !== confirmPassword) return t('auth.errors.passwordMismatch');
     return null;
   };
 
@@ -64,7 +66,7 @@ export default function Register() {
     
     if (error) {
       console.error("❌ [Register] Erro ao criar conta:", error);
-      setError(error.message.includes("already registered") ? "Este e-mail já está cadastrado" : error.message);
+      setError(error.message.includes("already registered") ? t('auth.register.alreadyRegistered') : error.message);
       setIsSubmitting(false);
     } else {
       // Conta criada com sucesso - redirecionar para login
@@ -81,12 +83,12 @@ export default function Register() {
   };
 
   const handleBack = () => {
-    navigate("/welcome", { replace: true });
+    navigate("/landing", { replace: true });
   };
 
   return (
     <div
-      className="min-h-screen min-h-[100dvh] flex flex-col bg-black text-white"
+      className="min-h-screen min-h-[100dvh] flex flex-col bg-white text-slate-900"
       style={{
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
@@ -98,7 +100,7 @@ export default function Register() {
           <button
             type="button"
             onClick={handleBack}
-            className="absolute -top-12 left-0 p-2 text-gray-400 hover:text-white transition-colors"
+            className="absolute -top-12 left-0 p-2 text-slate-400 hover:text-slate-900 transition-colors"
           >
             <ChevronLeft size={24} />
           </button>
@@ -108,19 +110,19 @@ export default function Register() {
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <h1 className="text-2xl font-semibold tracking-tight">Criar conta</h1>
-            <p className="text-sm text-gray-400">Preencha os campos para começar</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{t('auth.register.title')}</h1>
+            <p className="text-sm text-slate-500">{t('auth.register.subtitle')}</p>
           </div>
 
           {success && (
-            <div className="mb-4 flex items-center gap-2 rounded-2xl border border-green-500/40 bg-green-500/10 px-4 py-3 text-sm text-green-100">
+            <div className="mb-4 flex items-center gap-2 rounded-2xl border border-green-500/40 bg-green-500/10 px-4 py-3 text-sm text-green-700">
               <CheckCircle size={18} />
-              <span>Conta criada! Faça login para continuar...</span>
+              <span>{t('auth.register.success')}</span>
             </div>
           )}
 
           {error && (
-            <div className="mb-4 flex items-center gap-2 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            <div className="mb-4 flex items-center gap-2 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-700">
               <AlertCircle size={18} />
               <span>{error}</span>
             </div>
@@ -133,9 +135,9 @@ export default function Register() {
               }`}
               style={{ transitionDelay: "200ms" }}
             >
-              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-200">
-                <User size={16} className="text-gray-500" />
-                Seu Nome *
+              <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+                <User size={16} className="text-slate-400" />
+                {t('auth.register.nameLabel')}
               </label>
               <Input
                 type="text"
@@ -143,8 +145,8 @@ export default function Register() {
                 onChange={e => setFullName(e.target.value)}
                 disabled={isSubmitting || success}
                 autoComplete="name"
-                placeholder="Ex: João Silva"
-                className="h-11 w-full rounded-full border-0 bg-[#111111] px-4 text-sm text-white placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
+                placeholder={t('auth.register.namePlaceholder')}
+                className="h-11 w-full rounded-full border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
               />
             </div>
 
@@ -154,9 +156,9 @@ export default function Register() {
               }`}
               style={{ transitionDelay: "260ms" }}
             >
-              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-200">
-                <Building2 size={16} className="text-gray-500" />
-                Nome da Empresa *
+              <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+                <Building2 size={16} className="text-slate-400" />
+                {t('auth.register.companyLabel')}
               </label>
               <Input
                 type="text"
@@ -164,8 +166,8 @@ export default function Register() {
                 onChange={e => setCompany(e.target.value)}
                 disabled={isSubmitting || success}
                 autoComplete="organization"
-                placeholder="Ex: Fazenda Boa Colheita"
-                className="h-11 w-full rounded-full border-0 bg-[#111111] px-4 text-sm text-white placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
+                placeholder={t('auth.register.companyPlaceholder')}
+                className="h-11 w-full rounded-full border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
               />
             </div>
 
@@ -175,10 +177,10 @@ export default function Register() {
               }`}
               style={{ transitionDelay: "320ms" }}
             >
-              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-200">
-                <Plane size={16} className="text-gray-500" />
-                Drone(s) utilizado(s)
-                <span className="text-xs font-normal text-gray-500">(Opcional)</span>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+                <Plane size={16} className="text-slate-400" />
+                {t('auth.register.droneLabel')}
+                <span className="text-xs font-normal text-slate-400">{t('auth.register.droneOptional')}</span>
               </label>
               <Input
                 type="text"
@@ -186,8 +188,8 @@ export default function Register() {
                 onChange={e => setDrone(e.target.value)}
                 disabled={isSubmitting || success}
                 autoComplete="off"
-                placeholder="Ex: DJI AGRAS, XAG, etc."
-                className="h-11 w-full rounded-full border-0 bg-[#111111] px-4 text-sm text-white placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
+                placeholder={t('auth.register.dronePlaceholder')}
+                className="h-11 w-full rounded-full border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
               />
             </div>
 
@@ -197,17 +199,17 @@ export default function Register() {
               }`}
               style={{ transitionDelay: "380ms" }}
             >
-              <label className="block text-sm font-medium text-gray-200">Email</label>
-              <div className="relative">
-                <Mail size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+              <label className="block text-sm font-medium text-slate-700">{t('auth.login.emailLabel')}</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#A3FF3F] transition-colors w-5 h-5" />
                 <Input
                   type="email"
                   value={email}
+                  onChange={e => setEmail(e.target.value)}
                   disabled={isSubmitting || success}
-                  onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
-                  placeholder="seu@email.com"
-                  className="h-11 w-full rounded-full border-0 bg-[#111111] pl-11 pr-4 text-sm text-white placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
+                  placeholder={t('auth.register.emailPlaceholder')}
+                  className="h-11 w-full pl-12 rounded-full border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
                 />
               </div>
             </div>
@@ -218,26 +220,23 @@ export default function Register() {
               }`}
               style={{ transitionDelay: "440ms" }}
             >
-              <label className="block text-sm font-medium text-gray-200">Senha</label>
-              <div className="relative">
-                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+              <label className="block text-sm font-medium text-slate-700">{t('auth.login.passwordLabel')}</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#A3FF3F] transition-colors w-5 h-5" />
                 <Input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  disabled={isSubmitting || success}
                   onChange={e => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                  placeholder="min. 6 caracteres"
-                  className="h-11 w-full rounded-full border-0 bg-[#111111] pl-11 pr-11 text-sm text-white placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
+                  disabled={isSubmitting || success}
+                  placeholder="••••••••"
+                  className="h-11 w-full pl-12 pr-12 rounded-full border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
                 />
                 <button
-                  tabIndex={-1}
                   type="button"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-200 transition-colors"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label="Mostrar senha"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  {showPassword ? <EyeOff size={20}/> : <Eye size={20}/>}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
@@ -248,45 +247,45 @@ export default function Register() {
               }`}
               style={{ transitionDelay: "500ms" }}
             >
-              <label className="block text-sm font-medium text-gray-200">Confirmar senha</label>
-              <div className="relative">
-                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+              <label className="block text-sm font-medium text-slate-700">{t('auth.register.confirmPasswordLabel')}</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#A3FF3F] transition-colors w-5 h-5" />
                 <Input
                   type={showPassword ? "text" : "password"}
                   value={confirmPassword}
-                  disabled={isSubmitting || success}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                  placeholder="Repita a senha"
-                  className="h-11 w-full rounded-full border-0 bg-[#111111] pl-11 pr-4 text-sm text-white placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
+                  disabled={isSubmitting || success}
+                  placeholder="••••••••"
+                  className="h-11 w-full pl-12 pr-12 rounded-full border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
                 />
               </div>
             </div>
 
-            <Button
-              type="submit"
-              disabled={isSubmitting || success}
-              size="lg"
-              className={`mt-2 w-full rounded-full text-base font-semibold text-black shadow-md shadow-[#A3FF3F]/40 transition-all active:scale-[0.98] ${
+            <div
+              className={`pt-2 transition-all duration-500 ${
                 mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              } ${isSubmitting ? "bg-[#86D935] hover:bg-[#86D935]" : "bg-[#A3FF3F] hover:bg-[#93F039]"}`}
+              }`}
+              style={{ transitionDelay: "560ms" }}
             >
-              {isSubmitting ? "Criando..." : "Criar conta"}
-            </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || success}
+                className="w-full h-12 rounded-full bg-[#A3FF3F] text-slate-900 font-bold text-base hover:bg-[#92e62e] active:scale-[0.98] transition-all shadow-lg shadow-[#A3FF3F]/20 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? t('auth.register.submitting') : t('auth.register.submitButton')}
+              </Button>
+            </div>
           </form>
 
           <div
-            className={`mt-6 text-center text-sm transition-all duration-500 ${
-              mounted ? "opacity-100" : "opacity-0"
+            className={`mt-8 text-center text-sm transition-all duration-500 ${
+              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
-            style={{ transitionDelay: "600ms" }}
+            style={{ transitionDelay: "620ms" }}
           >
-            <span className="text-gray-500">Já tem conta? </span>
-            <Link 
-              to="/auth/login" 
-              className="font-semibold text-[#8DFD44] hover:underline"
-            >
-              Entrar
+            <span className="text-slate-500">{t('auth.register.alreadyAccount')} </span>
+            <Link to="/auth/login" className="font-bold text-[#A3FF3F] hover:underline hover:text-[#92e62e]">
+              {t('auth.login.title')}
             </Link>
           </div>
         </div>

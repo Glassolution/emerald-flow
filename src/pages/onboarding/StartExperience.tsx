@@ -17,7 +17,12 @@ export default function StartExperience() {
   }, []);
 
   const handleStart = () => {
-    navigate('/onboarding/checkout');
+    completeOnboarding();
+    if (user) {
+      navigate('/app/home');
+    } else {
+      navigate('/auth/register');
+    }
   };
 
   const startDate = format(addDays(new Date(), 7), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
@@ -32,7 +37,7 @@ export default function StartExperience() {
     >
       {/* Header Navigation - Reduced padding */}
       <div className="pt-1 pb-1 flex items-center justify-between shrink-0">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400">
+        <button onClick={() => navigate('/landing')} className="p-2 -ml-2 text-gray-400">
           <ChevronLeft size={20} />
         </button>
         

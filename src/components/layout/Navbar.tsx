@@ -2,9 +2,11 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import { useI18n } from "@/contexts/I18nContext";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useI18n();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass">
@@ -21,23 +23,23 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             <Link to="/recursos" className="text-muted-foreground hover:text-foreground transition-colors">
-              Recursos
+              {t('navbar.resources')}
             </Link>
             <Link to="/planos" className="text-muted-foreground hover:text-foreground transition-colors">
-              Planos
+              {t('navbar.plans')}
             </Link>
             <Link to="/ajuda" className="text-muted-foreground hover:text-foreground transition-colors">
-              Ajuda
+              {t('navbar.help')}
             </Link>
           </div>
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-4">
             <Button variant="ghost" asChild>
-              <Link to="/auth/login">Entrar</Link>
+              <Link to="/auth/login">{t('navbar.login')}</Link>
             </Button>
             <Button asChild>
-              <Link to="/auth/register">Começar grátis</Link>
+              <Link to="/auth/register">{t('navbar.startFree')}</Link>
             </Button>
           </div>
 
@@ -45,7 +47,7 @@ export function Navbar() {
           <button
             className="md:hidden p-2 text-foreground"
             onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle menu"
+            aria-label={t('navbar.toggleMenu')}
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -60,31 +62,31 @@ export function Navbar() {
                 className="text-muted-foreground hover:text-foreground transition-colors py-2"
                 onClick={() => setIsOpen(false)}
               >
-                Recursos
+                {t('navbar.resources')}
               </Link>
               <Link
                 to="/planos"
                 className="text-muted-foreground hover:text-foreground transition-colors py-2"
                 onClick={() => setIsOpen(false)}
               >
-                Planos
+                {t('navbar.plans')}
               </Link>
               <Link
                 to="/ajuda"
                 className="text-muted-foreground hover:text-foreground transition-colors py-2"
                 onClick={() => setIsOpen(false)}
               >
-                Ajuda
+                {t('navbar.help')}
               </Link>
               <hr className="border-border" />
               <Button variant="ghost" asChild className="justify-start">
                 <Link to="/auth/login" onClick={() => setIsOpen(false)}>
-                  Entrar
+                  {t('navbar.login')}
                 </Link>
               </Button>
               <Button asChild>
                 <Link to="/auth/register" onClick={() => setIsOpen(false)}>
-                  Começar grátis
+                  {t('navbar.startFree')}
                 </Link>
               </Button>
             </div>

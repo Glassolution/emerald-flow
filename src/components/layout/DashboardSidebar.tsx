@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface NavItem {
   icon: React.ElementType;
@@ -25,24 +26,25 @@ interface NavItem {
 }
 
 const mainNav: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/app" },
-  { icon: MessageSquare, label: "Chat IA", href: "/app/chat" },
-  { icon: FileText, label: "Documentos", href: "/app/documentos" },
-  { icon: Users, label: "Equipe", href: "/app/equipe" },
+  { icon: LayoutDashboard, label: "sidebar.dashboard", href: "/app" },
+  { icon: MessageSquare, label: "sidebar.chat", href: "/app/chat" },
+  { icon: FileText, label: "sidebar.documents", href: "/app/documentos" },
+  { icon: Users, label: "sidebar.team", href: "/app/equipe" },
 ];
 
 const adminNav: NavItem[] = [
-  { icon: BarChart3, label: "Métricas", href: "/app/admin/metricas", adminOnly: true },
+  { icon: BarChart3, label: "sidebar.metrics", href: "/app/admin/metricas", adminOnly: true },
 ];
 
 const bottomNav: NavItem[] = [
-  { icon: CreditCard, label: "Plano", href: "/app/plano" },
-  { icon: Settings, label: "Configurações", href: "/app/configuracoes" },
-  { icon: HelpCircle, label: "Ajuda", href: "/ajuda" },
+  { icon: CreditCard, label: "sidebar.plan", href: "/app/plano" },
+  { icon: Settings, label: "sidebar.settings", href: "/app/configuracoes" },
+  { icon: HelpCircle, label: "sidebar.help", href: "/ajuda" },
 ];
 
 export function DashboardSidebar() {
   const location = useLocation();
+  const { t } = useI18n();
   const [collapsed, setCollapsed] = useState(false);
   // TODO: Replace with actual user role from auth context
   const userRole = "owner";
@@ -67,7 +69,7 @@ export function DashboardSidebar() {
         )} />
         {!collapsed && (
           <>
-            <span className="flex-1 text-sm font-medium">{item.label}</span>
+            <span className="flex-1 text-sm font-medium">{t(item.label)}</span>
             {item.badge && (
               <span className="px-2 py-0.5 text-xs rounded-full bg-sidebar-primary/20 text-sidebar-primary">
                 {item.badge}
@@ -119,7 +121,7 @@ export function DashboardSidebar() {
             </div>
             {!collapsed && (
               <p className="px-3 mb-2 text-xs font-medium text-sidebar-foreground/50 uppercase tracking-wider">
-                Admin
+                {t('sidebar.admin')}
               </p>
             )}
             <div className="space-y-1">
@@ -144,7 +146,7 @@ export function DashboardSidebar() {
             )}
           >
             <LogOut size={20} className="shrink-0" />
-            {!collapsed && <span className="text-sm font-medium">Sair</span>}
+            {!collapsed && <span className="text-sm font-medium">{t('sidebar.logout')}</span>}
           </button>
         </div>
       </div>

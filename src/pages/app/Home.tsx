@@ -15,12 +15,12 @@ import { LanguageSelector } from "@/components/ui/LanguageSelector";
 import { useNavigate } from "react-router-dom";
 import dronePainelImg from "@/assets/drone painel 1.webp";
 
-const categories = ["Todos", "Cálculos", "Operações", "Relatórios"];
+const CATEGORY_KEYS = ["all", "calculations", "operations", "reports"] as const;
 
 export default function Home() {
   const navigate = useNavigate();
   const { t } = useI18n();
-  const [category, setCategory] = useState("Todos");
+  const [activeCategoryKey, setActiveCategoryKey] = useState<string>("all");
   const [isFavorite, setIsFavorite] = useState(false);
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -167,8 +167,8 @@ export default function Home() {
             </div>
             <div className="flex justify-between items-end">
               <div>
-                <h3 className="text-[17px] font-bold text-[#1a1a1a]">Histórico</h3>
-                <p className="text-[13px] text-[#1a1a1a]/60">{allCalculations.length} Registros</p>
+                <h3 className="text-[17px] font-bold text-[#1a1a1a]">{t("home.history")}</h3>
+                <p className="text-[13px] text-[#1a1a1a]/60">{allCalculations.length} {t("home.records")}</p>
               </div>
               <MoreVertical size={16} className="text-[#1a1a1a]/40 mb-1" />
             </div>
@@ -180,7 +180,7 @@ export default function Home() {
       {!search && (
         <div className="px-2 space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-[22px] font-bold text-[#1a1a1a]">Suas Atividades</h2>
+            <h2 className="text-[22px] font-bold text-[#1a1a1a]">{t("home.yourActivities")}</h2>
             <button className="text-[#8a8a8a]">
               <LayoutGrid size={20} />
             </button>
@@ -192,11 +192,11 @@ export default function Home() {
                 <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
                   <Package size={16} className="text-blue-500" />
                 </div>
-                <span className="text-[13px] font-semibold text-[#1a1a1a]">Produtos</span>
+                <span className="text-[13px] font-semibold text-[#1a1a1a]">{t("home.products")}</span>
               </div>
               <div>
                 <span className="text-[24px] font-bold text-[#1a1a1a]">{allProducts.length}</span>
-                <span className="text-[13px] text-[#8a8a8a] ml-1">itens</span>
+                <span className="text-[13px] text-[#8a8a8a] ml-1">{t("home.items")}</span>
               </div>
             </Link>
 
@@ -205,11 +205,11 @@ export default function Home() {
                 <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
                   <FlaskConical size={16} className="text-orange-500" />
                 </div>
-                <span className="text-[13px] font-semibold text-[#1a1a1a]">Receitas</span>
+                <span className="text-[13px] font-semibold text-[#1a1a1a]">{t("home.recipes")}</span>
               </div>
               <div>
                 <span className="text-[24px] font-bold text-[#1a1a1a]">{allRecipes.length}</span>
-                <span className="text-[13px] text-[#8a8a8a] ml-1">salvas</span>
+                <span className="text-[13px] text-[#8a8a8a] ml-1">{t("home.saved")}</span>
               </div>
             </Link>
           </div>
@@ -220,37 +220,37 @@ export default function Home() {
       {!search && (
         <div className="px-2 space-y-4">
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-            {categories.map((cat) => (
+            {CATEGORY_KEYS.map((key) => (
               <button
-                key={cat}
-                onClick={() => setCategory(cat)}
+                key={key}
+                onClick={() => setActiveCategoryKey(key)}
                 className={cn(
                   "px-5 py-2.5 rounded-full text-[14px] font-bold whitespace-nowrap transition-all",
-                  category === cat
+                  activeCategoryKey === key
                     ? "bg-[#1a1a1a] text-white shadow-md"
                     : "bg-[#f2f4f7] text-[#8a8a8a]"
                 )}
               >
-                {cat}
+                {t(`home.categories.${key}`)}
               </button>
             ))}
           </div>
 
           <div className="mt-2">
-            {category === "Todos" && (
+            {activeCategoryKey === "all" && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-[20px] font-bold text-[#1a1a1a]">Últimos Cálculos</h2>
-                  <Link to="/app/favoritos" className="text-[14px] font-semibold text-green-600">Ver todos</Link>
+                  <h2 className="text-[20px] font-bold text-[#1a1a1a]">{t("home.lastCalculations")}</h2>
+                  <Link to="/app/favoritos" className="text-[14px] font-semibold text-green-600">{t("home.viewAll")}</Link>
                 </div>
                 <RecentCalculations />
               </div>
             )}
-            {category === "Cálculos" && (
+            {activeCategoryKey === "calculations" && (
               <FilteredCalculations calculations={allCalculations.slice(0, 10)} isLoading={isLoading} />
             )}
-            {category === "Operações" && <Operacoes isLoading={isLoading} />}
-            {category === "Relatórios" && <Relatorios isLoading={isLoading} />}
+            {activeCategoryKey === "operations" && <Operacoes isLoading={isLoading} />}
+            {activeCategoryKey === "reports" && <Relatorios isLoading={isLoading} />}
           </div>
         </div>
       )}
@@ -269,7 +269,7 @@ export default function Home() {
       )}
 
       {/* Featured Banner - Modern Style */}
-      {!search && category === "Todos" && (
+      {!search && activeCategoryKey === "all" && (
         <div className="px-2 pb-6">
           <div className="relative rounded-[32px] overflow-hidden shadow-xl group">
             <div className="relative h-[260px]">

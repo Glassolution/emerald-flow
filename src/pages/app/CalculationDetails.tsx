@@ -11,11 +11,13 @@ import { CheckCircle2 } from "lucide-react";
 import { getSavedCalculations, deleteCalculation, formatCalculationDate, type SavedCalculationData } from "@/lib/favoritesService";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/contexts/I18nContext";
 
 export default function CalculationDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [calculation, setCalculation] = useState<SavedCalculationData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -31,8 +33,8 @@ export default function CalculationDetails() {
 
       if (!found) {
         toast({
-          title: "Cálculo não encontrado",
-          description: "Este cálculo não existe mais.",
+          title: t('calculationDetails.notFound'),
+          description: t('calculationDetails.notFoundDesc'),
           variant: "destructive",
         });
         navigate("/app/favoritos", { replace: true });
@@ -43,10 +45,10 @@ export default function CalculationDetails() {
     };
 
     loadCalculation();
-  }, [id, navigate, toast]);
+  }, [id, navigate, toast, t]);
 
   const handleDelete = async () => {
-    if (!calculation || !confirm("Tem certeza que deseja excluir este cálculo dos favoritos?")) {
+    if (!calculation || !confirm(t('favorites.deleteConfirm'))) {
       return;
     }
 
@@ -57,14 +59,14 @@ export default function CalculationDetails() {
 
     if (error) {
       toast({
-        title: "Erro",
-        description: error.message || "Erro ao excluir cálculo.",
+        title: t('common.error'),
+        description: error.message || t('favorites.errorLoading'),
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Excluído",
-        description: "Cálculo removido dos favoritos.",
+        title: t('favorites.removed'),
+        description: t('favorites.removedDesc'),
       });
       navigate("/app/favoritos", { replace: true });
     }
@@ -92,7 +94,7 @@ export default function CalculationDetails() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="w-12 h-12 border-2 border-gray-300 border-t-primary rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Carregando...</p>
+            <p className="text-muted-foreground">{t('common.loading')}</p>
           </div>
         </div>
       </div>
@@ -104,10 +106,10 @@ export default function CalculationDetails() {
   // Gerar texto final
   const gerarTextoFinal = (): string => {
     const linhasProdutos = result.produtos.map(
-      (p) => `- Coloque ${p.produtoPorTanque} ${p.unit} de ${p.nome}`
+      (p) => t('calculationDetails.productLine', { amount: p.produtoPorTanque, unit: p.unit, name: p.nome })
     );
 
-    return `Para cada tanque do drone:\n${linhasProdutos.join("\n")}\n- Complete com água até fechar ${input.volumeTanqueL} litros do tanque.`;
+    return t('calculationDetails.finalResultText', { products: linhasProdutos.join("\n"), volume: input.volumeTanqueL });
   };
 
   return (
@@ -123,7 +125,7 @@ export default function CalculationDetails() {
           <ArrowLeft size={20} />
         </Button>
         <div className="flex-1">
-          <h1 className="text-[20px] font-bold text-foreground">Detalhes do Cálculo</h1>
+          <h1 className="text-[20px] font-bold text-foreground">{t('calculationDetails.title')}</h1>
           <p className="text-[12px] text-muted-foreground">
             {formatCalculationDate(calculation.timestamp)}
           </p>
@@ -149,14 +151,14 @@ export default function CalculationDetails() {
       <Card className="p-5 bg-black text-white mb-6">
         <div className="flex items-center gap-2 mb-4">
           <CheckCircle2 size={20} className="text-green-500" />
-          <h3 className="text-[18px] font-bold text-white">Resultado</h3>
+          <h3 className="text-[18px] font-bold text-white">{t('calculationDetails.result')}</h3>
         </div>
 
         <div className="space-y-4">
           {/* PASSO 1 */}
           <div className="bg-white/5 rounded-xl p-4">
             <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
-              PASSO 1 — Volume total de calda
+              {t('calculationDetails.step1')}
             </p>
             <p className="text-[24px] font-bold text-white">{result.volumeTotalL} L</p>
             <p className="text-[11px] text-white/70 mt-1">
@@ -167,11 +169,11 @@ export default function CalculationDetails() {
           {/* PASSO 2 */}
           <div className="bg-white/5 rounded-xl p-4">
             <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
-              PASSO 2 — Número de tanques
+              {t('calculationDetails.step2')}
             </p>
-            <p className="text-[24px] font-bold text-white">{result.numeroTanques} tanques</p>
+            <p className="text-[24px] font-bold text-white">{result.numeroTanques} {t('favorites.tanks')}</p>
             <p className="text-[11px] text-white/70 mt-1">
-              {result.volumeTotalL} L ÷ {input.volumeTanqueL} L = {result.numeroTanques} tanques
+              {result.volumeTotalL} L ÷ {input.volumeTanqueL} L = {result.numeroTanques} {t('favorites.tanks')}
             </p>
           </div>
 
@@ -183,7 +185,7 @@ export default function CalculationDetails() {
               <div className="space-y-3">
                 <div>
                   <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
-                    PASSO 3 — Produto total no trabalho
+                    {t('calculationDetails.step3')}
                   </p>
                   <p className="text-[20px] font-bold text-white">
                     {produto.totalProduto} {produto.unit}
@@ -195,58 +197,53 @@ export default function CalculationDetails() {
 
                 <div className="pt-3 border-t border-white/20">
                   <p className="text-[11px] uppercase tracking-wide text-white/70 mb-1">
-                    PASSO 4 — Produto por tanque
+                    {t('calculationDetails.step4')}
                   </p>
                   <p className="text-[24px] font-bold text-green-500">
                     {produto.produtoPorTanque} {produto.unit}
                   </p>
                   <p className="text-[11px] text-white/70 mt-1">
-                    {produto.totalProduto} {produto.unit} ÷ {result.numeroTanques} tanques
+                    {produto.totalProduto} {produto.unit} ÷ {result.numeroTanques} = {produto.produtoPorTanque} {produto.unit}
                   </p>
                 </div>
               </div>
             </div>
           ))}
+        </div>
 
-          {/* RESULTADO FINAL */}
-          <div className="bg-white/10 rounded-xl p-4 mt-4 border-2 border-green-500/30">
-            <p className="text-[14px] font-bold mb-3 text-white">RESULTADO FINAL</p>
-            <p className="text-[13px] leading-relaxed whitespace-pre-line text-white">
+        {/* Resumo Final */}
+        <div className="mt-6 pt-4 border-t border-white/20">
+          <p className="text-[11px] uppercase tracking-wide text-white/70 mb-2">
+            {t('calculationDetails.finalResult')}
+          </p>
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+            <p className="text-[13px] text-white whitespace-pre-line leading-relaxed">
               {gerarTextoFinal()}
             </p>
           </div>
         </div>
       </Card>
 
-      {/* Botões de Ação */}
-      <div className="space-y-3">
-        <Button
+      {/* Ações */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button 
+          variant="outline" 
           onClick={handleRefazer}
-          className="w-full h-12 bg-primary text-primary-foreground text-[14px] font-semibold rounded-full"
+          className="w-full gap-2 border-primary/20 hover:bg-primary/5 text-primary"
         >
-          <RotateCcw size={16} className="mr-2" />
-          Refazer cálculo
+          <RotateCcw size={18} />
+          {t('calculationDetails.redo')}
         </Button>
-        <Button
+        <Button 
+          variant="destructive" 
           onClick={handleDelete}
           disabled={isDeleting}
-          variant="outline"
-          className="w-full h-12 text-[14px] font-semibold rounded-full text-destructive hover:text-destructive"
+          className="w-full gap-2"
         >
-          {isDeleting ? (
-            <>
-              <div className="w-4 h-4 border-2 border-destructive/30 border-t-destructive rounded-full animate-spin mr-2" />
-              Excluindo...
-            </>
-          ) : (
-            <>
-              <Trash2 size={16} className="mr-2" />
-              Excluir dos favoritos
-            </>
-          )}
+          <Trash2 size={18} />
+          {isDeleting ? t('calculationDetails.deleting') : t('calculationDetails.deleteFromFavorites')}
         </Button>
       </div>
     </div>
   );
 }
-

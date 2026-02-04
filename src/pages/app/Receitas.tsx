@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { BookOpen, Plus, Trash2, Calendar, ChevronRight, Search, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { 
   getRecipes,
   deleteRecipe,
@@ -20,6 +21,7 @@ export default function Receitas() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -44,21 +46,21 @@ export default function Receitas() {
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (confirm("Tem certeza que deseja excluir esta receita?")) {
+    if (confirm(t('recipes.deleteConfirm'))) {
       if (!user) return;
       const { error } = await deleteRecipe(user.id, id);
       
       if (error) {
         toast({
-          title: "Erro",
-          description: error.message || "Erro ao excluir receita.",
+          title: t('common.error'),
+          description: error.message || t('recipes.deleteError'),
           variant: "destructive",
         });
       } else {
         loadRecipes();
         toast({
-          title: "Excluído",
-          description: "Receita removida com sucesso.",
+          title: t('recipes.deleted'),
+          description: t('recipes.deletedDesc'),
         });
       }
     }
@@ -87,8 +89,8 @@ export default function Receitas() {
     if (!user) return;
     if (!recipeName.trim()) {
       toast({
-        title: "Erro",
-        description: "Nome da receita é obrigatório.",
+        title: t('common.error'),
+        description: t('recipes.nameRequired'),
         variant: "destructive",
       });
       return;
@@ -97,8 +99,8 @@ export default function Receitas() {
     // Por enquanto, criar receita vazia (usuário pode editar depois)
     // Em uma versão futura, pode abrir um modal completo para criar receita
     toast({
-      title: "Em desenvolvimento",
-      description: "Criação de receitas será implementada em breve.",
+      title: t('recipes.inDevelopment'),
+      description: t('recipes.createFeatureComing'),
     });
     setAddModalOpen(false);
     setRecipeName("");
@@ -115,7 +117,7 @@ export default function Receitas() {
     return (
       <div className="flex flex-col items-center justify-center h-full py-20 text-center animate-fade-in pt-4">
         <div className="w-12 h-12 border-2 border-gray-300 border-t-primary rounded-full animate-spin mb-4" />
-        <p className="text-sm text-[#8a8a8a]">Carregando receitas...</p>
+        <p className="text-sm text-[#8a8a8a]">{t('recipes.loading')}</p>
       </div>
     );
   }
@@ -125,9 +127,9 @@ export default function Receitas() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[20px] font-bold text-[#1a1a1a]">Receitas</h1>
+          <h1 className="text-[20px] font-bold text-[#1a1a1a]">{t('recipes.title')}</h1>
           <p className="text-[12px] text-[#8a8a8a]">
-            {filteredRecipes.length} de {recipes.length} receita{recipes.length !== 1 ? 's' : ''}
+            {filteredRecipes.length} {t('common.of')} {recipes.length} {recipes.length !== 1 ? t('recipes.recipes') : t('recipes.recipe')}
           </p>
         </div>
       </div>
@@ -137,7 +139,7 @@ export default function Receitas() {
         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           type="text"
-          placeholder="Buscar receitas..."
+          placeholder={t('recipes.searchPlaceholder')}
           className="w-full h-11 pl-10 pr-4 bg-white rounded-full text-[14px] text-[#1a1a1a] placeholder:text-[#8a8a8a] focus:outline-none shadow-sm border border-gray-100"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -150,7 +152,7 @@ export default function Receitas() {
         className="w-full h-12 bg-green-500 text-white rounded-xl hover:bg-green-600 font-semibold"
       >
         <Plus size={18} className="mr-2" />
-        Criar nova receita
+        {t('recipes.createRecipe')}
       </Button>
 
       {/* Recipes List */}
@@ -160,9 +162,9 @@ export default function Receitas() {
             <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
               <BookOpen size={32} className="text-blue-600" />
             </div>
-            <h2 className="text-xl font-bold text-[#1a1a1a] mb-2">Nenhuma receita ainda</h2>
+            <h2 className="text-xl font-bold text-[#1a1a1a] mb-2">{t('recipes.noRecipesTitle')}</h2>
             <p className="text-sm text-[#8a8a8a] max-w-[250px]">
-              Crie receitas de calda para reutilizar em seus cálculos.
+              {t('recipes.noRecipesDesc')}
             </p>
           </div>
         ) : (
@@ -230,27 +232,27 @@ export default function Receitas() {
               {/* Summary */}
               <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
                 <div>
-                  <p className="text-[11px] text-[#8a8a8a] mb-1">Área</p>
+                  <p className="text-[11px] text-[#8a8a8a] mb-1">{t('calc.area')}</p>
                   <p className="text-[13px] font-semibold text-[#1a1a1a]">
                     {recipe.area_ha.toFixed(2)} ha
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-[#8a8a8a] mb-1">Volume Tanque</p>
+                  <p className="text-[11px] text-[#8a8a8a] mb-1">{t('calc.tankVolume')}</p>
                   <p className="text-[13px] font-semibold text-[#1a1a1a]">
                     {recipe.volume_tanque_l.toFixed(1)} L
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-[#8a8a8a] mb-1">Taxa</p>
+                  <p className="text-[11px] text-[#8a8a8a] mb-1">{t('calc.rate')}</p>
                   <p className="text-[13px] font-semibold text-[#1a1a1a]">
                     {recipe.taxa_l_ha.toFixed(1)} L/ha
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-[#8a8a8a] mb-1">Produtos</p>
+                  <p className="text-[11px] text-[#8a8a8a] mb-1">{t('calc.products')}</p>
                   <p className="text-[13px] font-semibold text-[#1a1a1a]">
-                    {recipe.products.length} produto{recipe.products.length !== 1 ? 's' : ''}
+                    {recipe.products.length} {recipe.products.length !== 1 ? t('calc.products').toLowerCase() : t('calc.product').toLowerCase()}
                   </p>
                 </div>
               </div>
@@ -263,27 +265,27 @@ export default function Receitas() {
       <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Criar Nova Receita</DialogTitle>
+            <DialogTitle>{t('recipes.createRecipe')}</DialogTitle>
             <DialogDescription>
-              Crie uma receita de calda para reutilizar em seus cálculos.
+              {t('recipes.noRecipesDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="recipe-name">Nome da Receita *</Label>
+              <Label htmlFor="recipe-name">{t('recipes.name')} *</Label>
               <Input
                 id="recipe-name"
-                placeholder="Ex: Calda para Soja"
+                placeholder={`Ex: ${t('recipes.name')}`}
                 value={recipeName}
                 onChange={(e) => setRecipeName(e.target.value)}
                 className="mt-1"
               />
             </div>
             <div>
-              <Label htmlFor="recipe-description">Descrição</Label>
+              <Label htmlFor="recipe-description">{t('recipes.description')}</Label>
               <Textarea
                 id="recipe-description"
-                placeholder="Descreva a receita..."
+                placeholder={t('recipes.description')}
                 value={recipeDescription}
                 onChange={(e) => setRecipeDescription(e.target.value)}
                 className="mt-1"
@@ -295,7 +297,7 @@ export default function Receitas() {
                 onClick={handleCreateRecipe}
                 className="flex-1 bg-green-500 hover:bg-green-600"
               >
-                Criar
+                {t('common.save')}
               </Button>
               <Button
                 variant="outline"
@@ -305,7 +307,7 @@ export default function Receitas() {
                   setRecipeDescription("");
                 }}
               >
-                Cancelar
+                {t('common.cancel')}
               </Button>
             </div>
           </div>

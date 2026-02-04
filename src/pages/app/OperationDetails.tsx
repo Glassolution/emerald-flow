@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Sprout, Package, Plane, CheckCircle2, Clock, Trash2, Edit, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { 
   getOperations,
   deleteOperation,
@@ -20,6 +21,7 @@ export default function OperationDetails() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [operation, setOperation] = useState<Operation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -39,8 +41,8 @@ export default function OperationDetails() {
         setOperation(found);
       } else {
         toast({
-          title: "Operação não encontrada",
-          description: "Esta operação não existe mais.",
+          title: t("operations.notFound"),
+          description: t("operations.notFoundDesc"),
           variant: "destructive",
         });
         navigate("/app/operacoes", { replace: true });
@@ -48,8 +50,8 @@ export default function OperationDetails() {
     } catch (error) {
       console.error("Erro ao carregar operação:", error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar operação.",
+        title: t("common.error"),
+        description: t("operations.errorLoading"),
         variant: "destructive",
       });
       navigate("/app/operacoes", { replace: true });
@@ -61,18 +63,18 @@ export default function OperationDetails() {
   const handleDelete = async () => {
     if (!operation || !user) return;
 
-    if (confirm("Tem certeza que deseja excluir esta operação?")) {
+    if (confirm(t("operations.deleteConfirm"))) {
       const { error } = await deleteOperation(user.id, operation.id);
       if (error) {
         toast({
-          title: "Erro",
-          description: error.message || "Erro ao excluir operação.",
+          title: t("common.error"),
+          description: error.message || t("operations.errorDeleting"),
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Excluído",
-          description: "Operação removida com sucesso.",
+          title: t("common.success"),
+          description: t("operations.deleted"),
         });
         navigate("/app/operacoes", { replace: true });
       }
@@ -84,7 +86,7 @@ export default function OperationDetails() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-gray-300 border-t-primary rounded-full animate-spin mx-auto mb-2" />
-          <p className="text-sm text-[#8a8a8a]">Carregando operação...</p>
+          <p className="text-sm text-[#8a8a8a]">{t("operations.loadingOne")}</p>
         </div>
       </div>
     );
@@ -106,7 +108,7 @@ export default function OperationDetails() {
             <ArrowLeft size={18} className="text-gray-600" />
           </button>
           <div>
-            <h1 className="text-[20px] font-bold text-[#1a1a1a]">Detalhes da Operação</h1>
+            <h1 className="text-[20px] font-bold text-[#1a1a1a]">{t("operations.detailsTitle")}</h1>
             <p className="text-[12px] text-[#8a8a8a]">{operation.farm_name}</p>
           </div>
         </div>
@@ -118,7 +120,7 @@ export default function OperationDetails() {
             className="h-9 text-[12px]"
           >
             <Trash2 size={14} className="mr-1" />
-            Excluir
+            {t("operations.delete")}
           </Button>
         </div>
       </div>
@@ -137,12 +139,12 @@ export default function OperationDetails() {
           {operation.status === "completed" ? (
             <>
               <CheckCircle2 size={14} className="mr-2" />
-              Concluída
+              {t("operations.completed")}
             </>
           ) : (
             <>
               <Clock size={14} className="mr-2" />
-              Planejada
+              {t("operations.planned")}
             </>
           )}
         </Badge>
@@ -152,13 +154,13 @@ export default function OperationDetails() {
       <Card className="p-5 space-y-4">
         {/* Farm and Field */}
           <div>
-            <h2 className="text-[16px] font-semibold text-[#1a1a1a] mb-3">Informações Gerais</h2>
+            <h2 className="text-[16px] font-semibold text-[#1a1a1a] mb-3">{t("operations.generalInfo")}</h2>
             <div className="space-y-3">
               {operation.operation_name && (
                 <div className="flex items-start gap-3">
                   <MapPin size={18} className="text-gray-400 mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-[12px] text-[#8a8a8a] mb-0.5">Nome da Operação</p>
+                    <p className="text-[12px] text-[#8a8a8a] mb-0.5">{t("operations.name")}</p>
                     <p className="text-[14px] font-medium text-[#1a1a1a]">{operation.operation_name}</p>
                   </div>
                 </div>
@@ -166,7 +168,7 @@ export default function OperationDetails() {
               <div className="flex items-start gap-3">
                 <MapPin size={18} className="text-gray-400 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-[12px] text-[#8a8a8a] mb-0.5">Cliente / Fazenda</p>
+                  <p className="text-[12px] text-[#8a8a8a] mb-0.5">{t("operations.clientFarm")}</p>
                   <p className="text-[14px] font-medium text-[#1a1a1a]">
                     {operation.client_name || operation.farm_name}
                   </p>
@@ -175,7 +177,7 @@ export default function OperationDetails() {
               <div className="flex items-start gap-3">
                 <MapPin size={18} className="text-gray-400 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-[12px] text-[#8a8a8a] mb-0.5">Talhão / Área</p>
+                  <p className="text-[12px] text-[#8a8a8a] mb-0.5">{t("operations.field")}</p>
                   <p className="text-[14px] font-medium text-[#1a1a1a]">{operation.field_name}</p>
                 </div>
               </div>
@@ -183,7 +185,7 @@ export default function OperationDetails() {
                 <div className="flex items-start gap-3">
                   <MapPin size={18} className="text-gray-400 mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-[12px] text-[#8a8a8a] mb-0.5">Localidade</p>
+                    <p className="text-[12px] text-[#8a8a8a] mb-0.5">{t("operations.location")}</p>
                     <p className="text-[14px] font-medium text-[#1a1a1a]">{operation.location}</p>
                   </div>
                 </div>
@@ -191,7 +193,7 @@ export default function OperationDetails() {
               <div className="flex items-start gap-3">
                 <Sprout size={18} className="text-gray-400 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-[12px] text-[#8a8a8a] mb-0.5">Tipo de Cultura</p>
+                  <p className="text-[12px] text-[#8a8a8a] mb-0.5">{t("operations.crop")}</p>
                   <p className="text-[14px] font-medium text-[#1a1a1a]">{operation.crop}</p>
                 </div>
               </div>
@@ -199,7 +201,7 @@ export default function OperationDetails() {
                 <div className="flex items-start gap-3">
                   <Sprout size={18} className="text-gray-400 mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-[12px] text-[#8a8a8a] mb-0.5">Praga / Doença alvo</p>
+                    <p className="text-[12px] text-[#8a8a8a] mb-0.5">{t("operations.target")}</p>
                     <p className="text-[14px] font-medium text-[#1a1a1a]">
                       {operation.target_pest || operation.target}
                     </p>
@@ -209,7 +211,7 @@ export default function OperationDetails() {
               <div className="flex items-start gap-3">
                 <Calendar size={18} className="text-gray-400 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-[12px] text-[#8a8a8a] mb-0.5">Data</p>
+                  <p className="text-[12px] text-[#8a8a8a] mb-0.5">{t("operations.date")}</p>
                   <p className="text-[14px] font-medium text-[#1a1a1a]">
                     {formatOperationDate(operation.date)}
                   </p>
@@ -221,32 +223,32 @@ export default function OperationDetails() {
 
       {/* Product and Application Card */}
       <Card className="p-5 space-y-4">
-        <h2 className="text-[16px] font-semibold text-[#1a1a1a] mb-3">Produto e Aplicação</h2>
+        <h2 className="text-[16px] font-semibold text-[#1a1a1a] mb-3">{t("operations.productAndApplication")}</h2>
         <div className="space-y-3">
           <div className="flex items-start gap-3">
             <Package size={18} className="text-gray-400 mt-0.5" />
             <div className="flex-1">
-              <p className="text-[12px] text-[#8a8a8a] mb-0.5">Produto</p>
+              <p className="text-[12px] text-[#8a8a8a] mb-0.5">{t("operations.product")}</p>
               <p className="text-[14px] font-medium text-[#1a1a1a]">{operation.product_name}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[12px] text-[#8a8a8a] mb-1">Área</p>
+              <p className="text-[12px] text-[#8a8a8a] mb-1">{t("operations.area")}</p>
               <p className="text-[14px] font-medium text-[#1a1a1a]">{operation.area_ha.toFixed(2)} ha</p>
             </div>
             <div>
-              <p className="text-[12px] text-[#8a8a8a] mb-1">Dose</p>
+              <p className="text-[12px] text-[#8a8a8a] mb-1">{t("operations.dose")}</p>
               <p className="text-[14px] font-medium text-[#1a1a1a]">
                 {operation.dose_value} {operation.dose_unit}
               </p>
             </div>
             <div>
-              <p className="text-[12px] text-[#8a8a8a] mb-1">Volume (L/ha)</p>
+              <p className="text-[12px] text-[#8a8a8a] mb-1">{t("operations.volumePerHa")}</p>
               <p className="text-[14px] font-medium text-[#1a1a1a]">{operation.volume_l_ha} L/ha</p>
             </div>
             <div>
-              <p className="text-[12px] text-[#8a8a8a] mb-1">Drone</p>
+              <p className="text-[12px] text-[#8a8a8a] mb-1">{t("operations.drone")}</p>
               <p className="text-[14px] font-medium text-[#1a1a1a]">{operation.drone_model}</p>
             </div>
           </div>
@@ -256,11 +258,11 @@ export default function OperationDetails() {
       {/* Calculations Card */}
       {(operation.total_volume_l || operation.total_product_quantity) && (
         <Card className="p-5 space-y-4 bg-green-50 border-green-200">
-          <h2 className="text-[16px] font-semibold text-[#1a1a1a] mb-3">Cálculos Automáticos</h2>
+          <h2 className="text-[16px] font-semibold text-[#1a1a1a] mb-3">{t("operations.automaticCalculations")}</h2>
           <div className="grid grid-cols-2 gap-4">
             {operation.total_volume_l && (
               <div className="bg-white rounded-lg p-3">
-                <p className="text-[11px] text-[#8a8a8a] mb-1">Volume Total de Calda</p>
+                <p className="text-[11px] text-[#8a8a8a] mb-1">{t("operations.totalSprayVolume")}</p>
                 <p className="text-[18px] font-bold text-green-600">
                   {operation.total_volume_l.toFixed(2)} L
                 </p>
@@ -268,7 +270,7 @@ export default function OperationDetails() {
             )}
             {operation.total_product_quantity && (
               <div className="bg-white rounded-lg p-3">
-                <p className="text-[11px] text-[#8a8a8a] mb-1">Quantidade Total de Produto</p>
+                <p className="text-[11px] text-[#8a8a8a] mb-1">{t("operations.totalProductQuantity")}</p>
                 <p className="text-[18px] font-bold text-green-600">
                   {operation.total_product_quantity.toFixed(2)} {operation.dose_unit}
                 </p>
@@ -285,7 +287,7 @@ export default function OperationDetails() {
         className="w-full h-12 text-[14px] font-semibold rounded-full"
       >
         <ArrowLeft size={16} className="mr-2" />
-        Voltar para Operações
+        {t("operations.backToOperations")}
       </Button>
     </div>
   );

@@ -8,8 +8,10 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { SubscriptionGuard } from "@/components/auth/SubscriptionGuard";
 import { RouteTransitionLoader } from "@/components/ui/RouteTransitionLoader";
 import { I18nProvider } from "@/contexts/I18nContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 
 // Layouts
 import { MobileLayout } from "@/components/layout/MobileLayout";
@@ -17,7 +19,8 @@ import { MobileLayout } from "@/components/layout/MobileLayout";
 // Public Pages
 import SplashPage from "@/pages/SplashPage";
 import LoadingPage from "@/pages/LoadingPage";
-import Welcome from "@/pages/auth/Welcome";
+import Landing from "@/pages/Landing";
+import Subscription from "@/pages/Subscription";
 import QuizStep from "@/pages/onboarding/QuizStep";
 import QuizCongrats from "@/pages/onboarding/QuizCongrats";
 import QuizSuccess from "@/pages/onboarding/QuizSuccess";
@@ -55,11 +58,12 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <I18nProvider>
       <AuthProvider>
-        <OnboardingProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+        <SubscriptionProvider>
+          <OnboardingProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
               <RouteTransitionLoader />
               <Routes>
                 {/* Root - SplashPage com lógica de roteamento */}
@@ -67,9 +71,10 @@ const App = () => (
                 
                 {/* Loading page - aparece após login */}
                 <Route path="/loading" element={<LoadingPage />} />
+                <Route path="/landing" element={<Landing />} />
                 
-                {/* Welcome - tela inicial para novos usuários */}
-                <Route path="/welcome" element={<Welcome />} />
+                {/* Welcome - redireciona para landing */}
+                <Route path="/welcome" element={<Navigate to="/landing" replace />} />
 
                 {/* Quiz Onboarding Flow */}
                 <Route path="/onboarding/quiz" element={<QuizStep />} />
@@ -88,27 +93,30 @@ const App = () => (
                 {/* Profile Setup - Protected but separate route */}
                 <Route element={<ProtectedRoute />}>
                   <Route path="/auth/profile-setup" element={<ProfileSetup />} />
+                  <Route path="/subscription" element={<Subscription />} />
                 </Route>
                 
                 {/* Protected App Routes - requires login */}
                 <Route element={<ProtectedRoute />}>
-                  <Route path="/app" element={<MobileLayout />}>
-                    {/* Default route - redireciona para home */}
-                    <Route index element={<Navigate to="/app/home" replace />} />
-                    
-                    {/* Bottom Navigation Routes */}
-                    <Route path="home" element={<Home />} />
-                    <Route path="calc" element={<Calc />} />
-                    <Route path="produtos" element={<Produtos />} />
-                    <Route path="favoritos" element={<Favoritos />} />
-                    <Route path="favoritos/:id" element={<CalculationDetails />} />
-                    <Route path="calculos" element={<Calculos />} />
-                    <Route path="receitas" element={<Receitas />} />
-                    <Route path="operacoes" element={<OperacoesPage />} />
-                    <Route path="operacoes/:id" element={<OperationDetails />} />
-                    <Route path="perfil" element={<Perfil />} />
-                    <Route path="configuracoes" element={<Configuracoes />} />
-                    <Route path="ajuda" element={<Ajuda />} />
+                  <Route element={<SubscriptionGuard />}>
+                    <Route path="/app" element={<MobileLayout />}>
+                      {/* Default route - redireciona para home */}
+                      <Route index element={<Navigate to="/app/home" replace />} />
+                      
+                      {/* Bottom Navigation Routes */}
+                      <Route path="home" element={<Home />} />
+                      <Route path="calc" element={<Calc />} />
+                      <Route path="produtos" element={<Produtos />} />
+                      <Route path="favoritos" element={<Favoritos />} />
+                      <Route path="favoritos/:id" element={<CalculationDetails />} />
+                      <Route path="calculos" element={<Calculos />} />
+                      <Route path="receitas" element={<Receitas />} />
+                      <Route path="operacoes" element={<OperacoesPage />} />
+                      <Route path="operacoes/:id" element={<OperationDetails />} />
+                      <Route path="perfil" element={<Perfil />} />
+                      <Route path="configuracoes" element={<Configuracoes />} />
+                      <Route path="ajuda" element={<Ajuda />} />
+                    </Route>
                   </Route>
                 </Route>
 
@@ -117,7 +125,8 @@ const App = () => (
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
-        </OnboardingProvider>
+          </OnboardingProvider>
+        </SubscriptionProvider>
       </AuthProvider>
     </I18nProvider>
   </QueryClientProvider>

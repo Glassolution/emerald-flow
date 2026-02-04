@@ -1,17 +1,19 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { Home, Calculator, Package, History, User, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { path: "/app/home", icon: Home, label: "Início" },
-  { path: "/app/produtos", icon: Package, label: "Produtos" },
-  { path: "/app/calc", icon: Plus, label: "Calcular", isCenter: true },
-  { path: "/app/favoritos", icon: History, label: "Histórico" },
-  { path: "/app/perfil", icon: User, label: "Perfil" },
-];
+import { useI18n } from "@/contexts/I18nContext";
 
 export function BottomNavigation() {
   const location = useLocation();
+  const { t } = useI18n();
+
+  const navItems = [
+    { path: "/app/home", icon: Home, label: t('navigation.home') },
+    { path: "/app/produtos", icon: Package, label: t('navigation.products') },
+    { path: "/app/calc", icon: Plus, label: t('navigation.calculate'), isCenter: true },
+    { path: "/app/favoritos", icon: History, label: t('navigation.history') },
+    { path: "/app/perfil", icon: User, label: t('navigation.profile') },
+  ];
 
   return (
     <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 pb-2 pt-2 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]" style={{ paddingBottom: `calc(0.5rem + env(safe-area-inset-bottom, 0px))` }}>

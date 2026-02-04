@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import logoCalc from "@/assets/logo-calc.png";
 
 // Versão do Welcome - incrementar quando quiser forçar exibição novamente
-const WELCOME_VERSION = "v2";
+const WELCOME_VERSION = "v3";
 const WELCOME_STORAGE_KEY = "calc_welcome_seen_version";
 
 export default function SplashPage() {
@@ -58,7 +58,7 @@ export default function SplashPage() {
     // Se precisa mostrar Welcome (nova versão ou primeiro acesso)
     if (needsWelcome) {
       console.log("✅ [SplashPage] Mostrando Welcome (versão nova ou primeiro acesso)");
-      navigate("/welcome", { replace: true });
+      navigate("/landing", { replace: true });
       return;
     }
 

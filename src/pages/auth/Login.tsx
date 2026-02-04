@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, AlertCircle, ChevronLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Mail, Lock, Eye, EyeOff, ChevronLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/contexts/I18nContext";
 
 export default function Login() {
   const navigate = useNavigate();
   const { user, loading, signIn, signInWithGoogle } = useAuth();
+  const { t } = useI18n();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,26 +15,6 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const handleGoogleLogin = async () => {
-    setError(null);
-    setIsGoogleLoading(true);
-    console.log("🔄 [Login] Iniciando login com Google...");
-    
-    const { error } = await signInWithGoogle();
-    
-    if (error) {
-      console.error("❌ [Login] Erro no Google login:", error);
-      setError(error.message);
-      setIsGoogleLoading(false);
-    }
-    // Se não houve erro, o usuário será redirecionado para o Google
-  };
 
   // Redirecionar se já logado
   useEffect(() => {
@@ -44,10 +24,10 @@ export default function Login() {
   }, [user, loading, navigate]);
 
   const validateForm = (): string | null => {
-    if (!email.trim()) return "Digite seu e-mail";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "E-mail inválido";
-    if (!password) return "Digite sua senha";
-    if (password.length < 6) return "A senha deve ter pelo menos 6 caracteres";
+    if (!email.trim()) return t('auth.errors.emailRequired');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return t('auth.errors.emailInvalid');
+    if (!password) return t('auth.errors.passwordRequired');
+    if (password.length < 6) return t('auth.errors.passwordLength');
     return null;
   };
 
@@ -63,7 +43,7 @@ export default function Login() {
     const { error } = await signIn(email, password);
     if (error) {
       setError(error.message === "Invalid login credentials" 
-        ? "E-mail ou senha incorretos" 
+        ? t('auth.errors.invalidCredentials') 
         : error.message
       );
       setIsSubmitting(false);
@@ -72,180 +52,153 @@ export default function Login() {
     }
   };
 
-  const handleBack = () => {
-    navigate("/welcome", { replace: true });
+  const handleGoogleLogin = async () => {
+    setError(null);
+    setIsGoogleLoading(true);
+    console.log("🔄 [Login] Iniciando login com Google...");
+    
+    const { error } = await signInWithGoogle();
+    
+    if (error) {
+      console.error("❌ [Login] Erro no Google login:", error);
+      setError(error.message);
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
-    <div
-      className="min-h-screen min-h-[100dvh] flex flex-col bg-black text-white"
-      style={{
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "env(safe-area-inset-bottom)",
-      }}
-    >
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="w-full max-w-sm relative">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="absolute -top-12 -left-2 p-2 text-gray-400 hover:text-white transition-colors"
+    <div className="font-sans antialiased bg-[#FFFFFF] dark:bg-[#0A0A0A] text-slate-900 dark:text-slate-100 min-h-[100dvh] flex flex-col">
+       <style>{`
+        .grid-pattern {
+            background-image: radial-gradient(circle, #e5e7eb 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .dark .grid-pattern {
+            background-image: radial-gradient(circle, #1f2937 1px, transparent 1px);
+        }
+      `}</style>
+      
+      <div className="fixed inset-0 grid-pattern opacity-50 pointer-events-none"></div>
+      
+      <div className="relative z-10 flex flex-col flex-grow px-6 pt-12 pb-8 max-w-md mx-auto w-full">
+        <div className="mb-8">
+          <button 
+          onClick={() => navigate("/landing")} 
+          className="p-2 -ml-2 text-slate-600 dark:text-slate-400 hover:text-[#A3FF33] transition-colors"
+        >
+          <ChevronLeft className="w-8 h-8" strokeWidth={1.5} />
+        </button>
+        </div>
+
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">{t('auth.login.title')}</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">{t('auth.login.subtitle')}</p>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 rounded-[16px] bg-red-500/10 border border-red-500/20 text-red-500 text-sm text-center font-medium">
+            {error}
+          </div>
+        )}
+
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1" htmlFor="email">{t('auth.login.emailLabel')}</label>
+            <div className="relative group">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#A3FF33] transition-colors w-6 h-6" />
+              <input 
+                id="email" 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t('auth.register.emailPlaceholder')}
+                className="w-full pl-12 pr-4 py-4 bg-slate-100 dark:bg-[#18181b] border-none rounded-[22px] focus:ring-2 focus:ring-[#A3FF33] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 transition-all outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1" htmlFor="password">{t('auth.login.passwordLabel')}</label>
+            <div className="relative group">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#A3FF33] transition-colors w-6 h-6" />
+              <input 
+                id="password" 
+                type={showPassword ? "text" : "password"} 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full pl-12 pr-12 py-4 bg-slate-100 dark:bg-[#18181b] border-none rounded-[22px] focus:ring-2 focus:ring-[#A3FF33] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 transition-all outline-none"
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <a href="#" className="text-sm font-semibold text-[#15803d] dark:text-[#A3FF33] hover:opacity-80 transition-opacity">
+              {t('auth.login.forgotPassword')}
+            </a>
+          </div>
+
+          <button 
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-4 bg-[#A3FF33] text-zinc-900 font-bold text-lg rounded-[22px] shadow-lg shadow-[#A3FF33]/20 hover:scale-[0.98] active:scale-95 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <ChevronLeft size={24} />
+            {isSubmitting ? t('auth.login.submitting') : t('auth.login.submitButton')}
+          </button>
+        </form>
+
+        <div className="relative my-10">
+          <div aria-hidden="true" className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200 dark:border-zinc-800"></div>
+          </div>
+          <div className="relative flex justify-center text-sm font-medium uppercase tracking-widest">
+            <span className="bg-[#FFFFFF] dark:bg-[#0A0A0A] px-4 text-slate-400 dark:text-zinc-600">{t('auth.login.or')}</span>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <button 
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={isGoogleLoading || isSubmitting}
+            className="w-full flex items-center justify-center gap-3 py-4 px-4 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-zinc-800 rounded-[22px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+          >
+            {isGoogleLoading ? (
+               <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-[#A3FF33]" />
+            ) : (
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"></path>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
+              </svg>
+            )}
+            <span>{t('auth.login.continueGoogle')}</span>
           </button>
 
-          <div
-            className={`space-y-1 mb-8 text-center transition-all duration-500 ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
+          <button 
+            type="button"
+            className="w-full flex items-center justify-center gap-3 py-4 px-4 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-zinc-800 rounded-[22px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors opacity-70 cursor-not-allowed"
           >
-            <h1 className="text-2xl font-semibold tracking-tight">Entrar</h1>
-            <p className="text-sm text-gray-400">Acesse sua conta para continuar</p>
-          </div>
+            <svg className="w-5 h-5 dark:fill-white fill-black" viewBox="0 0 24 24">
+              <path d="M17.05 20.28c-.98.95-2.05.88-3.08.35-1.09-.56-2.09-.48-3.08.02-1.06.53-2.39.38-3.4-.75C4.77 16.91 4.25 10.68 8.85 9.88c2.06.16 3.3 1.09 4.25 1.09.93 0 2.65-1.33 4.54-1.09 1.93.24 3.36 1.18 4.25 2.76-3.76 2.05-3.16 6.81.42 8.35-.41 1.27-1.04 2.5-1.86 3.29zM12.03 7.25c-.25-2.19 1.62-4.04 3.54-4.25.32 2.37-2.08 4.35-3.54 4.25z"></path>
+            </svg>
+            <span>{t('auth.login.continueApple')}</span>
+          </button>
+        </div>
 
-          {error && (
-            <div className="mb-6 flex items-center gap-2 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-              <AlertCircle size={18} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div
-              className={`space-y-2 transition-all duration-500 ${
-                mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}
-              style={{ transitionDelay: "200ms" }}
-            >
-              <label className="block text-sm font-medium text-gray-200">Email</label>
-              <div className="relative">
-                <Mail size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <Input
-                  type="email"
-                  value={email}
-                  disabled={isSubmitting}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  placeholder="seu@email.com"
-                  className="h-12 w-full rounded-full border-0 bg-[#111111] pl-11 pr-4 text-sm text-white placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
-                />
-              </div>
-            </div>
-
-            <div
-              className={`space-y-2 transition-all duration-500 ${
-                mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}
-              style={{ transitionDelay: "300ms" }}
-            >
-              <label className="block text-sm font-medium text-gray-200">Senha</label>
-              <div className="relative">
-                <Lock size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  disabled={isSubmitting}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  className="h-12 w-full rounded-full border-0 bg-[#111111] pl-11 pr-11 text-sm text-white placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-[#A3FF3F]"
-                />
-                <button
-                  tabIndex={-1}
-                  type="button"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-200 transition-colors"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label="Mostrar senha"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  className="text-xs font-medium text-[#facc15] hover:text-[#fde047] transition-colors"
-                >
-                  Esqueceu a senha?
-                </button>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              size="xl"
-              className={`mt-2 w-full rounded-full text-base font-semibold text-black shadow-md shadow-[#A3FF3F]/40 transition-all active:scale-[0.98] ${
-                mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              } ${isSubmitting ? "bg-[#86D935] hover:bg-[#86D935]" : "bg-[#A3FF3F] hover:bg-[#93F039]"}`}
-            >
-              {isSubmitting ? "Entrando..." : "Login"}
-            </Button>
-          </form>
-
-          <div
-            className={`mt-8 flex items-center gap-4 text-xs text-gray-500 transition-all duration-500 ${
-              mounted ? "opacity-100" : "opacity-0"
-            }`}
-            style={{ transitionDelay: "500ms" }}
-          >
-            <div className="h-px flex-1 bg-[#1f2933]" />
-            <span>OU</span>
-            <div className="h-px flex-1 bg-[#1f2933]" />
-          </div>
-
-          <div
-            className={`mt-4 space-y-3 transition-all duration-500 ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-            style={{ transitionDelay: "600ms" }}
-          >
-            <Button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={isGoogleLoading || isSubmitting}
-              className="flex h-14 w-full items-center justify-center gap-3 rounded-full border border-[#1f2933] bg-[#111111] text-sm font-medium text-white hover:bg-[#18181b]"
-            >
-              {isGoogleLoading ? (
-                <>
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-white" />
-                  <span>Conectando...</span>
-                </>
-              ) : (
-                <>
-                  <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
-                    <path d="M17.64 9.20457C17.64 8.56666 17.5827 7.95293 17.4764 7.3634H9V10.8453H13.8436C13.6347 11.9813 12.9636 12.9838 11.9682 13.6418V15.6413H14.82C16.2991 14.2977 17.64 12.0685 17.64 9.20457Z" fill="#4285F4" />
-                    <path d="M9 18C11.43 18 13.4446 17.179 14.82 15.6413L11.9682 13.6418C11.2345 14.1418 10.2591 14.4454 9 14.4454C6.65591 14.4454 4.67318 12.7875 3.96409 10.6606H0.982269V12.7201C2.35227 15.0239 5.43727 18 9 18Z" fill="#34A853" />
-                    <path d="M3.96409 10.6606C3.78409 10.1606 3.68136 9.62007 3.68136 9.06136C3.68136 8.50255 3.78409 7.96207 3.96409 7.46206V5.40262H0.982273C0.357273 6.66207 0 8.03398 0 9.06136C0 10.0887 0.357273 11.4607 0.982273 12.7201L3.96409 10.6606Z" fill="#FBBC05" />
-                    <path d="M9 3.57654C10.3573 3.57654 11.5672 4.01944 12.5277 4.94182L15.1473 2.32225C13.4446 0.800181 11.43 0 9 0C5.43727 0 2.35227 2.97609 0.982273 5.40262L3.96409 7.46206C4.67318 5.33515 6.65591 3.57654 9 3.57654Z" fill="#EA4335" />
-                  </svg>
-                  <span>Continuar com Google</span>
-                </>
-              )}
-            </Button>
-
-            <Button
-              type="button"
-              disabled
-              className="flex h-14 w-full items-center justify-center gap-3 rounded-full border border-[#1f2933] bg-[#111111] text-sm font-medium text-gray-500"
-            >
-              <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
-                <path d="M14.1755 9.25757C14.1695 7.54442 15.5536 6.76324 15.6147 6.72605C14.7842 5.52703 13.5487 5.3707 13.0351 5.35651C11.908 5.24462 10.8273 5.96285 10.2462 5.96285C9.6521 5.96285 8.66985 5.37376 7.7158 5.39173C6.4721 5.41016 5.31885 6.11559 4.66785 7.20277C3.2451 9.55196 4.45925 12.9685 5.82235 14.8438C6.48485 15.7647 7.2879 16.7855 8.37825 16.7511C9.44695 16.7133 9.8124 16.053 11.0632 16.053C12.3007 16.053 12.6396 16.7511 13.7484 16.7291C14.8848 16.7133 15.5616 15.8306 16.2162 14.9036C16.9841 13.8067 17.3245 12.7359 17.3332 12.6992C17.3112 12.6907 14.1814 11.4681 14.1755 9.25757ZM11.6771 3.92863C12.1856 3.29277 12.5617 2.41748 12.4627 1.54218C11.7392 1.571 10.7986 2.05482 10.2706 2.6862C9.80765 3.23325 9.3808 4.11768 9.4986 4.97556C10.3076 5.03819 11.1686 4.56447 11.6771 3.92863Z" fill="#6b7280" />
-              </svg>
-              <span>Continuar com Apple</span>
-            </Button>
-          </div>
-
-          <div
-            className={`mt-8 text-center text-sm transition-all duration-500 ${
-              mounted ? "opacity-100" : "opacity-0"
-            }`}
-            style={{ transitionDelay: "700ms" }}
-          >
-            <span className="text-gray-500">Não tem conta? </span>
-            <Link to="/auth/register" className="font-semibold text-[#8DFD44] hover:underline">
-              Criar conta
+        <div className="mt-8 text-center text-sm">
+            <span className="text-slate-500 dark:text-slate-400">{t('auth.login.noAccount')} </span>
+            <Link to="/auth/register" className="font-bold text-[#A3FF33] hover:underline">
+              {t('auth.login.createAccount')}
             </Link>
-          </div>
         </div>
       </div>
     </div>

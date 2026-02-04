@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Heart, Calculator, Trash2, Calendar, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/contexts/I18nContext";
 import { 
   getSavedCalculations, 
   toggleFavorite, 
@@ -12,6 +13,7 @@ import {
 
 export default function Historico() {
   const { toast } = useToast();
+  const { t } = useI18n();
   const [calculations, setCalculations] = useState<SavedCalculation[]>([]);
   const [filter, setFilter] = useState<"all" | "favorites">("all");
 
@@ -35,22 +37,22 @@ export default function Historico() {
     if (success) {
       loadCalculations();
       toast({
-        title: newFavoriteStatus ? "Adicionado aos favoritos" : "Removido dos favoritos",
+        title: newFavoriteStatus ? t('favorites.addedToFavorites') : t('favorites.removedFromFavorites'),
         description: newFavoriteStatus 
-          ? "Cálculo adicionado aos favoritos" 
-          : "Cálculo removido dos favoritos",
+          ? t('favorites.addedToFavoritesDesc') 
+          : t('favorites.removedFromFavoritesDesc'),
       });
     }
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este cálculo?")) {
+    if (confirm(t('favorites.deleteConfirm'))) {
       const success = deleteCalculation(id);
       if (success) {
         loadCalculations();
         toast({
-          title: "Excluído",
-          description: "Cálculo excluído com sucesso",
+          title: t('favorites.removed'),
+          description: t('favorites.removedDesc'),
         });
       }
     }
@@ -61,8 +63,8 @@ export default function Historico() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[20px] font-bold text-[#1a1a1a]">Histórico</h1>
-          <p className="text-[12px] text-[#8a8a8a]">{calculations.length} cálculo{calculations.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-[20px] font-bold text-[#1a1a1a]">{t('favorites.history')}</h1>
+          <p className="text-[12px] text-[#8a8a8a]">{calculations.length} {calculations.length !== 1 ? t('favorites.calculations') : t('favorites.calculation')}</p>
         </div>
       </div>
 
@@ -77,7 +79,7 @@ export default function Historico() {
               : "bg-white text-[#1a1a1a] shadow-sm"
           )}
         >
-          Todos
+          {t('favorites.all')}
         </button>
         <button
           onClick={() => setFilter("favorites")}
@@ -89,7 +91,7 @@ export default function Historico() {
           )}
         >
           <Heart size={14} className={filter === "favorites" ? "fill-white" : ""} />
-          Favoritos
+          {t('favorites.favorites')}
         </button>
       </div>
 
@@ -100,12 +102,12 @@ export default function Historico() {
             <Calculator size={32} className="text-gray-400" />
           </div>
           <h2 className="text-lg font-bold text-[#1a1a1a] mb-2">
-            {filter === "favorites" ? "Nenhum favorito" : "Nenhum cálculo salvo"}
+            {filter === "favorites" ? t('favorites.noFavorites') : t('favorites.noCalculations')}
           </h2>
           <p className="text-sm text-[#8a8a8a] max-w-[250px]">
             {filter === "favorites" 
-              ? "Favorite cálculos para vê-los aqui."
-              : "Salve cálculos para vê-los aqui."}
+              ? t('favorites.favoriteToView')
+              : t('favorites.saveToView')}
           </p>
         </div>
       ) : (
@@ -123,7 +125,7 @@ export default function Historico() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[14px] font-semibold text-[#1a1a1a] truncate">
-                      {calc.name || `Cálculo - ${calc.input.areaHa} ha`}
+                      {calc.name || `${t('favorites.calculation')} - ${calc.input.areaHa} ha`}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Calendar size={12} className="text-[#8a8a8a]" />
@@ -162,27 +164,27 @@ export default function Historico() {
               {/* Summary */}
               <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
                 <div>
-                  <p className="text-[11px] text-[#8a8a8a] mb-1">Área</p>
+                  <p className="text-[11px] text-[#8a8a8a] mb-1">{t('favorites.area')}</p>
                   <p className="text-[13px] font-semibold text-[#1a1a1a]">
                     {calc.input.areaHa.toFixed(2)} ha
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-[#8a8a8a] mb-1">Volume Total</p>
+                  <p className="text-[11px] text-[#8a8a8a] mb-1">{t('favorites.totalVolume')}</p>
                   <p className="text-[13px] font-semibold text-[#1a1a1a]">
                     {calc.result.volumeTotalL.toFixed(1)} L
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-[#8a8a8a] mb-1">Tanques</p>
+                  <p className="text-[11px] text-[#8a8a8a] mb-1">{t('favorites.tanks')}</p>
                   <p className="text-[13px] font-semibold text-[#1a1a1a]">
-                    {calc.result.numeroTanques} tanque{calc.result.numeroTanques !== 1 ? 's' : ''}
+                    {calc.result.numeroTanques} {calc.result.numeroTanques !== 1 ? t('favorites.tanks').toLowerCase() : t('favorites.tank')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-[#8a8a8a] mb-1">Produtos</p>
+                  <p className="text-[11px] text-[#8a8a8a] mb-1">{t('favorites.products')}</p>
                   <p className="text-[13px] font-semibold text-[#1a1a1a]">
-                    {calc.input.products.length} produto{calc.input.products.length !== 1 ? 's' : ''}
+                    {calc.input.products.length} {calc.input.products.length !== 1 ? t('favorites.products').toLowerCase() : t('favorites.product')}
                   </p>
                 </div>
               </div>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Calendar, MapPin, Sprout, Package, Plane, CheckCircle2, Clock, Trash2, Eye, Search, Filter, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { 
   getOperations,
   deleteOperation,
@@ -18,6 +19,7 @@ import { NewOperationModal } from "@/components/operations/NewOperationModal";
 
 export default function OperacoesPage() {
   const { toast } = useToast();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [operations, setOperations] = useState<Operation[]>([]);
@@ -55,8 +57,8 @@ export default function OperacoesPage() {
     } catch (error) {
       console.error("Erro ao carregar operações:", error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar operações.",
+        title: t("common.error"),
+        description: t("operations.errorLoading"),
         variant: "destructive",
       });
     } finally {
@@ -68,18 +70,18 @@ export default function OperacoesPage() {
     e.stopPropagation();
     if (!user) return;
 
-    if (confirm("Tem certeza que deseja excluir esta operação?")) {
+    if (confirm(t("operations.deleteConfirm"))) {
       const { error } = await deleteOperation(user.id, id);
       if (error) {
         toast({
-          title: "Erro",
-          description: error.message || "Erro ao excluir operação.",
+          title: t("common.error"),
+          description: error.message || t("operations.errorDeleting"),
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Excluído",
-          description: "Operação removida com sucesso.",
+          title: t("common.success"),
+          description: t("operations.deleted"),
         });
         loadOperations();
       }
@@ -107,7 +109,7 @@ export default function OperacoesPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-gray-300 border-t-primary rounded-full animate-spin mx-auto mb-2" />
-          <p className="text-sm text-[#8a8a8a]">Carregando operações...</p>
+          <p className="text-sm text-[#8a8a8a]">{t("operations.loading")}</p>
         </div>
       </div>
     );
@@ -118,15 +120,15 @@ export default function OperacoesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[20px] font-bold text-[#1a1a1a]">Operações</h1>
-          <p className="text-[12px] text-[#8a8a8a]">Gerencie suas pulverizações</p>
+          <h1 className="text-[20px] font-bold text-[#1a1a1a]">{t("operations.title")}</h1>
+          <p className="text-[12px] text-[#8a8a8a]">{t("operations.subtitle")}</p>
         </div>
         <Button
           onClick={() => setIsNewOperationModalOpen(true)}
           className="h-10 bg-green-500 text-white hover:bg-green-600 text-[13px] font-semibold rounded-full px-4"
         >
           <Plus size={16} className="mr-2" />
-          Nova Operação
+          {t("operations.newOperation")}
         </Button>
       </div>
 
@@ -135,7 +137,7 @@ export default function OperacoesPage() {
         <div className="relative">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8a8a8a]" />
           <Input
-            placeholder="Buscar por fazenda, talhão, cultura..."
+            placeholder={t("operations.searchPlaceholder")}
             className="pl-10 h-11 rounded-full bg-white text-[14px]"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -155,9 +157,9 @@ export default function OperacoesPage() {
                   : "bg-white text-[#1a1a1a] shadow-sm"
               )}
             >
-              {status === "all" && "Todas"}
-              {status === "planned" && "Planejadas"}
-              {status === "completed" && "Concluídas"}
+              {status === "all" && t("operations.status.all")}
+              {status === "planned" && t("operations.status.planned")}
+              {status === "completed" && t("operations.status.completed")}
             </button>
           ))}
         </div>
@@ -169,8 +171,8 @@ export default function OperacoesPage() {
           <Package size={32} className="mx-auto text-gray-400 mb-2" />
           <p className="text-sm text-[#8a8a8a]">
             {search || statusFilter !== "all" 
-              ? "Nenhuma operação encontrada com os filtros aplicados."
-              : "Nenhuma operação registrada ainda."}
+              ? t("operations.noOperations")
+              : t("operations.noOperationsYet")}
           </p>
           {!search && statusFilter === "all" && (
             <Button
@@ -178,7 +180,7 @@ export default function OperacoesPage() {
               className="mt-4 bg-green-500 text-white hover:bg-green-600"
             >
               <Plus size={16} className="mr-2" />
-              Criar primeira operação
+              {t("operations.createFirst")}
             </Button>
           )}
         </div>
@@ -214,12 +216,12 @@ export default function OperacoesPage() {
                       {operation.status === "completed" ? (
                         <>
                           <CheckCircle2 size={12} className="mr-1" />
-                          Concluída
+                          {t("operations.completed")}
                         </>
                       ) : (
                         <>
                           <Clock size={12} className="mr-1" />
-                          Planejada
+                          {t("operations.planned")}
                         </>
                       )}
                     </Badge>
@@ -230,7 +232,7 @@ export default function OperacoesPage() {
                     <div className="flex items-center gap-1.5">
                       <Package size={12} className="text-[#8a8a8a]" />
                       <span className="text-[11px] text-[#8a8a8a] truncate">
-                        {operation.product_name || "Produto não informado"}
+                        {operation.product_name || t("calc.product")}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -242,7 +244,7 @@ export default function OperacoesPage() {
                     <div className="flex items-center gap-1.5">
                       <Plane size={12} className="text-[#8a8a8a]" />
                       <span className="text-[11px] text-[#8a8a8a] truncate">
-                        {operation.drone_model || "Drone não informado"}
+                        {operation.drone_model || "Drone"}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -287,14 +289,14 @@ export default function OperacoesPage() {
                       navigate(`/app/operacoes/${operation.id}`);
                     }}
                     className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
-                    title="Ver detalhes"
+                    title={t("favorites.view")}
                   >
                     <Eye size={14} className="text-gray-600" />
                   </button>
                   <button
                     onClick={(e) => handleDelete(operation.id, e)}
                     className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-red-100 hover:text-red-600 transition-colors"
-                    title="Excluir"
+                    title={t("common.delete")}
                   >
                     <Trash2 size={14} className="text-gray-600" />
                   </button>

@@ -29,10 +29,12 @@ const iconSizes = {
 export function Avatar({ size = "md", className = "", linkTo }: AvatarProps) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     const loadAvatar = async () => {
       setIsLoading(true);
+      setHasError(false);
       const url = await getAvatarUrl();
       setAvatarUrl(url);
       setIsLoading(false);
@@ -43,19 +45,20 @@ export function Avatar({ size = "md", className = "", linkTo }: AvatarProps) {
   const avatarContent = (
     <div
       className={`${sizeClasses[size]} rounded-full overflow-hidden ${
-        avatarUrl ? "bg-gray-100" : "bg-[#1a1a1a]"
+        avatarUrl && !hasError ? "bg-gray-100" : "bg-[#E0E0E0]"
       } flex items-center justify-center ${className}`}
     >
       {isLoading ? (
         <div className="w-full h-full bg-gray-200 animate-pulse" />
-      ) : avatarUrl ? (
+      ) : avatarUrl && !hasError ? (
         <img
           src={avatarUrl}
           alt="Avatar"
           className="w-full h-full object-cover"
+          onError={() => setHasError(true)}
         />
       ) : (
-        <User size={iconSizes[size]} className="text-white/70" />
+        <User size={iconSizes[size]} className="text-[#9CA3AF] fill-[#9CA3AF]" />
       )}
     </div>
   );

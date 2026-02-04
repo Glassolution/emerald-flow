@@ -83,8 +83,8 @@ export default function Perfil() {
   }, [user]);
 
   const firstName = userProfile?.fullName 
-    ? (userProfile.fullName.trim().split(/\s+/)[0] || "Usuário")
-    : "Usuário";
+    ? (userProfile.fullName.trim().split(/\s+/)[0] || t('profile.defaultUser'))
+    : t('profile.defaultUser');
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -213,13 +213,13 @@ export default function Perfil() {
             ) : (
               <>
                 <h2 className="text-[28px] font-bold text-[#1a1a1a] tracking-tight cursor-pointer" onClick={() => setIsEditingName(true)}>
-                  {firstName}, 28
+                  {firstName}
                 </h2>
                 <ShieldCheck size={22} className="text-blue-500 fill-blue-500/20" />
               </>
             )}
           </div>
-          <p className="text-[#8a8a8a] font-medium text-[15px]">{userProfile?.companyName || "Piloto de Drones"}</p>
+          <p className="text-[#8a8a8a] font-medium text-[15px]">{userProfile?.companyName || t('profile.defaultRole')}</p>
         </div>
       </div>
 

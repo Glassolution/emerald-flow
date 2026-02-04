@@ -17,6 +17,7 @@ import { AddProductModal } from "@/components/catalog/AddProductModal";
 import { addCustomProduct } from "@/lib/productCatalogService";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/contexts/I18nContext";
 import type { ProductCategory, ProductUnit as CatalogProductUnit } from "@/types/product";
 
 interface LocationState {
@@ -44,6 +45,7 @@ export default function Calc() {
   const state = location.state as LocationState | null;
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useI18n();
 
   const [areaHa, setAreaHa] = useState<string>("");
   const [litrosPorHa, setLitrosPorHa] = useState<string>("");
@@ -84,7 +86,7 @@ export default function Calc() {
       unidade: product.unidade,
     };
     setProdutos(prev => [...prev, novoProduto]);
-    toast({ title: "Produto adicionado", description: `${product.nome} foi adicionado ao cálculo.` });
+    toast({ title: t('calc.productAdded'), description: `${product.nome} ${t('calc.addedToCalc')}` });
   };
 
   const handleSaveNewProduct = async (productData: {
@@ -100,17 +102,17 @@ export default function Calc() {
     image_url?: string;
   }) => {
     if (!user) {
-      toast({ title: "Erro", description: "Você precisa estar logado.", variant: "destructive" });
+      toast({ title: t('common.error'), description: t('calc.loginRequired'), variant: "destructive" });
       return;
     }
     try {
       const { product, error } = await addCustomProduct(user.id, productData);
       if (error) {
-        toast({ title: "Erro", description: error.message || "Erro ao salvar produto.", variant: "destructive" });
+        toast({ title: t('common.error'), description: error.message || t('calc.errorSavingProduct'), variant: "destructive" });
         return;
       }
       if (product) {
-        toast({ title: "Produto criado", description: "Produto personalizado criado com sucesso!" });
+        toast({ title: t('calc.productCreated'), description: t('calc.customProductCreated') });
         const novoProduto: ProdutoNoCalculo = {
           id: Date.now().toString(),
           nome: product.name,
@@ -121,7 +123,7 @@ export default function Calc() {
         setAddProductModalOpen(false);
       }
     } catch (error) {
-      toast({ title: "Erro", description: "Erro ao salvar produto personalizado.", variant: "destructive" });
+      toast({ title: t('common.error'), description: t('calc.errorSavingProduct'), variant: "destructive" });
     }
   };
 
@@ -142,12 +144,12 @@ export default function Calc() {
     const tanque = parseFloat(volumeTanque);
 
     if (!area || area <= 0 || !taxa || taxa <= 0 || !tanque || tanque <= 0) {
-      setError("Preencha Área, L/ha e Tanque corretamente.");
+      setError(t('calc.fillFieldsError'));
       return;
     }
 
     if (produtos.length === 0) {
-      setError("Adicione pelo menos um produto.");
+      setError(t('calc.addOneProductError'));
       return;
     }
 
@@ -175,7 +177,7 @@ export default function Calc() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else {
-      setError(calculation.errors?.messages[0] || "Erro ao calcular.");
+      setError(calculation.errors?.messages[0] || t('calc.calculationError'));
     }
   };
 
@@ -210,10 +212,10 @@ export default function Calc() {
     setIsSaving(false);
 
     if (error) {
-      toast({ title: "Erro", description: error.message || "Erro ao salvar cálculo.", variant: "destructive" });
+      toast({ title: t('common.error'), description: error.message || t('calc.saveError'), variant: "destructive" });
     } else {
       window.dispatchEvent(new CustomEvent("calculationSaved"));
-      toast({ title: "Cálculo salvo", description: "Acesse o Histórico para visualizar." });
+      toast({ title: t('calc.savedTitle'), description: t('calc.savedDesc') });
     }
   };
 

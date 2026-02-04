@@ -3,7 +3,7 @@
  * Mobile-first, simples e didático
  */
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Camera, User, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { uploadAvatar, removeAvatar, validateImageFile } from "@/lib/avatarService";
@@ -42,10 +42,16 @@ export function AvatarPicker({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
   };
+  
+  // Reset erro quando a URL muda
+  useEffect(() => {
+    setImageError(false);
+  }, [previewUrl, avatarUrl]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -137,10 +143,10 @@ export function AvatarPicker({
       <div className="relative">
         <div
           className={`${sizeClasses[size]} rounded-full overflow-hidden ${
-            displayUrl ? "bg-gray-100" : "bg-[#1a1a1a]"
+            displayUrl && !imageError ? "bg-gray-100" : "bg-[#E0E0E0]"
           } flex items-center justify-center`}
         >
-          {displayUrl ? (
+          {displayUrl && !imageError ? (
             <img
               src={displayUrl}
               alt="Avatar"
@@ -148,12 +154,11 @@ export function AvatarPicker({
               key={displayUrl} // Force re-render when URL changes
               onError={(e) => {
                 console.error("Erro ao carregar imagem:", displayUrl);
-                // Fallback para ícone se a imagem falhar
-                e.currentTarget.style.display = 'none';
+                setImageError(true);
               }}
             />
           ) : (
-            <User size={iconSize} className="text-white/70" />
+            <User size={iconSize} className="text-[#9CA3AF] fill-[#9CA3AF]" />
           )}
         </div>
 

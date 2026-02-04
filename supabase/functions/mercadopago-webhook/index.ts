@@ -1,21 +1,12 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-type DenoEnv = {
-  get(key: string): string | undefined;
-};
+declare const Deno: any;
 
-declare const Deno: {
-  env: DenoEnv;
-};
 
-declare module "https://deno.land/std@0.168.0/http/server.ts" {
-  export function serve(handler: (req: Request) => Response | Promise<Response>): void;
-}
 
-declare module "https://esm.sh/@supabase/supabase-js@2" {
-  export function createClient(url: string, key: string, options?: unknown): unknown;
-}
 
 type SupabaseAuthUser = {
   id: string;

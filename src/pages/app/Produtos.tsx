@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { ProductDetailsSheet } from "@/components/catalog/ProductDetailsSheet";
 import { AddProductModal } from "@/components/catalog/AddProductModal";
+import { useI18n } from "@/contexts/I18nContext";
 import {
   getAllProducts,
   filterProducts,
@@ -28,6 +29,7 @@ export default function Produtos() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<CatalogProduct[]>([]);
@@ -103,14 +105,14 @@ export default function Produtos() {
       if (showToast && !isTableNotFoundError(error)) {
         if (isAuthError(error)) {
           toast({
-            title: "Erro de autenticação",
+            title: t('common.error'),
             description: errorInfo.userMessage,
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Aviso",
-            description: "Carregando apenas produtos padrão. Produtos personalizados podem não estar disponíveis.",
+            title: t('common.error'),
+            description: t('products.toast.loadingError'),
             variant: "default",
           });
         }
@@ -165,8 +167,8 @@ export default function Produtos() {
           return;
         }
         toast({
-          title: "Produto atualizado",
-          description: "Seu produto foi atualizado com sucesso.",
+          title: t('products.toast.updated'),
+          description: t('products.toast.updatedDesc'),
         });
       } else {
         // Adicionar novo produto
@@ -195,8 +197,8 @@ export default function Produtos() {
         }
 
         toast({
-          title: "Produto adicionado",
-          description: "Seu produto foi adicionado ao catálogo.",
+          title: t('products.toast.added'),
+          description: t('products.toast.addedDesc'),
         });
       }
 
@@ -206,8 +208,8 @@ export default function Produtos() {
     } catch (error) {
       console.error("Erro ao salvar produto:", error);
       toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao salvar produto.",
+        title: t('common.error'),
+        description: error instanceof Error ? error.message : t('common.error'),
         variant: "destructive",
       });
     }
@@ -223,23 +225,23 @@ export default function Produtos() {
   const handleDeleteProduct = async (product: CatalogProduct) => {
     if (!user || !product.isCustom || !product.customId) return;
 
-    if (!confirm("Tem certeza que deseja excluir este produto?")) return;
+    if (!confirm(t('common.confirm'))) return;
 
     try {
       const { error } = await deleteCustomProduct(product.customId, user.id);
       if (error) throw error;
 
       toast({
-        title: "Produto excluído",
-        description: "O produto foi removido do seu catálogo.",
+        title: t('products.toast.deleted'),
+        description: t('products.toast.deletedDesc'),
       });
 
       await loadProducts();
     } catch (error) {
       console.error("Erro ao excluir produto:", error);
       toast({
-        title: "Erro",
-        description: "Erro ao excluir produto.",
+        title: t('common.error'),
+        description: t('common.error'),
         variant: "destructive",
       });
     }
@@ -251,6 +253,12 @@ export default function Produtos() {
       category: prev.category === category ? undefined : category,
     }));
   };
+  
+  // Helper to translate categories
+  const getCategoryLabel = (cat: string) => {
+    // @ts-ignore
+    return t(`products.categories.${cat}`) || cat;
+  };
 
   return (
     <div className="pt-4 pb-6">
@@ -261,9 +269,9 @@ export default function Produtos() {
             <Package size={20} className="text-white" />
           </div>
           <div className="flex-1">
-            <h1 className="text-[20px] font-bold text-gray-900">Catálogo</h1>
+            <h1 className="text-[20px] font-bold text-gray-900">{t('products.catalog')}</h1>
             <p className="text-[12px] text-gray-500">
-              {filteredProducts.length} produto{filteredProducts.length !== 1 ? "s" : ""}
+              {filteredProducts.length} {filteredProducts.length !== 1 ? t('favorites.products').toLowerCase() : t('calc.product').toLowerCase()}
             </p>
           </div>
           <Button
@@ -272,10 +280,10 @@ export default function Produtos() {
             variant="outline"
             size="sm"
             className="h-9 px-3 rounded-xl"
-            title="Recarregar catálogo"
+            title={t('products.reloadCatalog')}
           >
             <RefreshCw size={16} className={cn("mr-2", loading && "animate-spin")} />
-            Recarregar
+            {t('favorites.reload')}
           </Button>
         </div>
 
@@ -284,7 +292,7 @@ export default function Produtos() {
           <div className="flex-1 relative">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <Input
-              placeholder="Buscar produto..."
+              placeholder={t('products.searchPlaceholder')}
               value={filters.search || ""}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
               className="h-11 pl-10 rounded-xl bg-white border-gray-200"
@@ -312,7 +320,7 @@ export default function Produtos() {
                   setFilters((prev) => ({ ...prev, showOnlyCustom: !prev.showOnlyCustom }))
                 }
               >
-                Meus produtos
+                {t('products.myProducts')}
               </Button>
               {categories.map((cat) => (
                 <Button
@@ -325,7 +333,7 @@ export default function Produtos() {
                   )}
                   onClick={() => handleCategoryFilter(cat)}
                 >
-                  {cat}
+                  {getCategoryLabel(cat)}
                 </Button>
               ))}
             </div>
@@ -343,7 +351,7 @@ export default function Produtos() {
           className="w-full h-12 bg-green-500 text-white rounded-xl hover:bg-green-600 font-semibold"
         >
           <Plus size={18} className="mr-2" />
-          Adicionar meu produto
+          {t('products.addMyProduct')}
         </Button>
       </div>
 
@@ -351,15 +359,15 @@ export default function Produtos() {
       {loading ? (
         <div className="text-center py-12">
           <div className="w-8 h-8 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 text-[14px]">Carregando produtos...</p>
+          <p className="text-gray-500 text-[14px]">{t('products.loading')}</p>
         </div>
       ) : filteredProducts.length === 0 ? (
         <div className="text-center py-12">
           <Package size={48} className="mx-auto text-gray-300 mb-4" />
           <p className="text-gray-500 text-[14px]">
             {filters.search || filters.category
-              ? "Nenhum produto encontrado com esses filtros."
-              : "Nenhum produto cadastrado ainda."}
+              ? t('products.noProductsFound')
+              : t('products.noProductsRegistered')}
           </p>
         </div>
       ) : (
@@ -375,7 +383,7 @@ export default function Produtos() {
                 {customProducts.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <h2 className="text-[14px] font-semibold text-gray-900">Meus Produtos</h2>
+                      <h2 className="text-[14px] font-semibold text-gray-900">{t('products.myProducts')}</h2>
                       <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-600 border-green-500/20">
                         {customProducts.length}
                       </Badge>
@@ -397,7 +405,7 @@ export default function Produtos() {
                 {defaultProducts.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <h2 className="text-[14px] font-semibold text-gray-900">Catálogo Público</h2>
+                      <h2 className="text-[14px] font-semibold text-gray-900">{t('products.publicCatalog')}</h2>
                       <Badge variant="outline" className="text-[10px] text-gray-600">
                         {defaultProducts.length}
                       </Badge>
