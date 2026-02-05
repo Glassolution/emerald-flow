@@ -97,7 +97,7 @@ export default function QuizStep() {
 
   return (
     <div
-      className="min-h-screen min-h-[100dvh] bg-white flex flex-col"
+      className="h-[100dvh] bg-white flex flex-col overflow-hidden"
       style={{
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
