@@ -121,10 +121,10 @@ export default function QuizStep() {
       <div className="px-6 mt-2 mb-6">
         <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-visible relative">
           <div 
-            className="h-full bg-[#22c55e] transition-all duration-500 ease-out rounded-full relative"
+            className="h-full bg-[#A3FF47] transition-all duration-500 ease-out rounded-full relative"
             style={{ width: `${progress}%` }}
           >
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#22c55e] rounded-full shadow-md transform translate-x-1/2 border-2 border-white" />
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#A3FF47] rounded-full shadow-md transform translate-x-1/2 border-2 border-white" />
           </div>
         </div>
       </div>
@@ -165,7 +165,7 @@ export default function QuizStep() {
           disabled={!selectedOption}
           className={`w-full py-4 sm:py-5 px-8 text-base sm:text-lg font-bold rounded-[22px] transition-all duration-300 ${
             selectedOption 
-              ? "bg-[#A3FF3F] hover:bg-[#93F039] text-black active:scale-[0.98] shadow-md shadow-[#A3FF3F]/40" 
+              ? "bg-[#A3FF47] hover:bg-[#92E63F] text-black active:scale-[0.98] shadow-md shadow-[#A3FF47]/40" 
               : "bg-gray-200 cursor-not-allowed text-gray-400 shadow-none"
           }`}
         >

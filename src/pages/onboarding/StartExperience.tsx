@@ -53,7 +53,7 @@ export default function StartExperience() {
         <div className="max-w-xs w-full">
           {/* Title centered with reduced font size */}
           <h1 className="text-[20px] font-[900] text-[#1a1a1a] leading-tight mb-4 text-center px-1">
-            Inicie sua experiência <span className="text-[#22c55e]">GRÁTIS</span> de 7 dias. <br />
+            Inicie sua experiência <span className="text-[#A3FF47]">GRÁTIS</span> de 7 dias. <br />
             <span className="text-[15px] font-bold mt-1 block">Não será cobrado nada agora</span>
           </h1>
 
@@ -61,13 +61,13 @@ export default function StartExperience() {
           <div className="relative pl-0 w-full max-w-[280px] mx-auto">
             {/* Vertical Line - Centered on icons (w-6 = 24px, center = 12px) */}
             <div className="absolute left-[11px] top-3 bottom-3 w-[2px] bg-green-100 rounded-full" />
-            <div className="absolute left-[11px] top-3 h-full w-[2px] bg-[#22c55e] rounded-full" style={{ height: '75%' }} />
+            <div className="absolute left-[11px] top-3 h-full w-[2px] bg-[#A3FF47] rounded-full" style={{ height: '75%' }} />
 
             <div className="space-y-5 relative z-10">
               {/* Step 1 */}
               <div className="flex items-start gap-4">
-                <div className="w-6 h-6 rounded-full bg-[#22c55e] flex items-center justify-center shrink-0 shadow-sm shadow-green-100 relative z-20">
-                  <Lock size={12} className="text-white" />
+                <div className="w-6 h-6 rounded-full bg-[#A3FF47] flex items-center justify-center shrink-0 shadow-sm shadow-green-100 relative z-20">
+                  <Lock size={12} className="text-[#1a1a1a]" />
                 </div>
                 <div className="pt-0.5">
                   <h4 className="text-[14px] font-bold text-[#1a1a1a] mb-0.5">Hoje</h4>
@@ -79,8 +79,8 @@ export default function StartExperience() {
 
               {/* Step 2 */}
               <div className="flex items-start gap-4">
-                <div className="w-6 h-6 rounded-full bg-[#22c55e] flex items-center justify-center shrink-0 shadow-sm shadow-green-100 relative z-20">
-                  <Bell size={12} className="text-white" />
+                <div className="w-6 h-6 rounded-full bg-[#A3FF47] flex items-center justify-center shrink-0 shadow-sm shadow-green-100 relative z-20">
+                  <Bell size={12} className="text-[#1a1a1a]" />
                 </div>
                 <div className="pt-0.5">
                   <h4 className="text-[14px] font-bold text-[#1a1a1a] mb-0.5">Em 5 Dias</h4>
@@ -116,7 +116,7 @@ export default function StartExperience() {
 
         <button
           onClick={handleStart}
-          className="w-full py-3 px-6 text-[15px] font-[900] rounded-[18px] transition-all duration-300 active:scale-[0.98] mb-3 uppercase tracking-wider shadow-md shadow-[#A3FF3F]/40 bg-[#A3FF3F] hover:bg-[#93F039] text-black"
+          className="w-full py-3 px-6 text-[15px] font-[900] rounded-[18px] transition-all duration-300 active:scale-[0.98] mb-3 uppercase tracking-wider shadow-md shadow-[#A3FF47]/40 bg-[#A3FF47] hover:bg-[#92E63F] text-black"
         >
           Começar agora
         </button>
