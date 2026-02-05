@@ -86,7 +86,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signIn = async (email: string, password: string) => {
     if (!supabase) {
-      return { error: { message: "Supabase não configurado" } };
+      return { error: { message: "Supabase não configurado. Verifique as chaves de API no painel da Vercel." } };
     }
 
     try {

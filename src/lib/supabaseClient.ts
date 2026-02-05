@@ -72,13 +72,13 @@ const isSupabaseConfigured = (() => {
     }
   }
   
-  // Publishable keys should be at least 30 chars, JWT keys should be at least 200 chars
-  if (isPublishableKey && trimmedKey.length < 30) {
+  // Publishable keys should be at least 20 chars, JWT keys should be at least 50 chars
+  if (isPublishableKey && trimmedKey.length < 20) {
     console.error("❌ [Supabase] VITE_SUPABASE_ANON_KEY (publishable) appears to be invalid (too short)");
     return false;
   }
   
-  if (isJWTKey && trimmedKey.length < 200) {
+  if (isJWTKey && trimmedKey.length < 50) {
     console.error("❌ [Supabase] VITE_SUPABASE_ANON_KEY (JWT) appears to be invalid (too short)");
     return false;
   }
