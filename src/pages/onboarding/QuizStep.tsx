@@ -103,14 +103,14 @@ export default function QuizStep() {
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      <div className="px-4 pt-6 pb-2 flex items-center justify-between relative">
+      <div className="px-4 pt-10 pb-2 flex items-center justify-between relative">
         <button 
           onClick={handleBack}
           className="p-2 -ml-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
         >
           <ChevronLeft size={28} />
         </button>
-        <div className="absolute inset-0 flex items-center justify-center pt-6">
+        <div className="absolute inset-0 flex items-center justify-center pt-10">
           <span className="text-[20px] font-bold text-gray-300 italic flex items-center gap-1">
             Calc
           </span>

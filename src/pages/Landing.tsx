@@ -40,7 +40,7 @@ export default function Landing() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center px-6 relative overflow-hidden shrink-0 justify-center min-h-0">
+      <main className="flex-1 flex flex-col items-center px-6 relative overflow-y-auto shrink-0 justify-center min-h-0">
         <div className="absolute inset-0 grid-pattern opacity-60 pointer-events-none -z-10"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full hero-glow pointer-events-none -z-10"></div>
 
@@ -50,7 +50,7 @@ export default function Landing() {
                 <img 
                     src={principalImg} 
                     alt="App Preview" 
-                    className="relative h-auto w-auto max-h-[55vh] object-contain drop-shadow-2xl z-20"
+                    className="relative h-auto w-auto max-h-[45vh] md:max-h-[55vh] object-contain drop-shadow-2xl z-20"
                 />
 
                 {/* Floating Icons */}
