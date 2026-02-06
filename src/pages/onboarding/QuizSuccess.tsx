@@ -67,7 +67,7 @@ export default function QuizSuccess() {
         </div>
       </div>
 
-      <div className="flex-1 px-6 flex flex-col items-center text-center w-full">
+      <div className="flex-1 px-6 flex flex-col items-center text-center w-full overflow-y-auto no-scrollbar">
         <h1 
           className={`text-[22px] font-black text-[#1a1a1a] mb-4 leading-tight transition-all duration-700 ${
             mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
