@@ -72,7 +72,7 @@ export default function QuizCongrats() {
         <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden relative">
           {/* Parte preenchida (laranja/verde) */}
           <div 
-            className="h-full bg-[#22c55e] transition-all duration-500 ease-out rounded-full"
+            className="h-full bg-[#A3FF3F] transition-all duration-500 ease-out rounded-full"
             style={{ width: `${progress}%` }}
           />
         </div>

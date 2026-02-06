@@ -104,8 +104,8 @@ export default function PlanReady() {
     >
       <div className="flex-1 flex flex-col items-center pt-8 pb-10 overflow-y-auto w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
         {/* Ícone de Checkmark Verde */}
-        <div className={`mb-6 w-20 h-20 bg-[#22c55e] rounded-full flex items-center justify-center transition-all duration-700 scale-in shadow-lg shadow-green-200 ${mounted ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}>
-          <Check size={40} className="text-white" strokeWidth={3.5} />
+        <div className={`mb-6 w-20 h-20 bg-[#A3FF3F] rounded-full flex items-center justify-center transition-all duration-700 scale-in shadow-lg shadow-[#A3FF3F]/40 ${mounted ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}>
+          <Check size={40} className="text-[#1a1a1a]" strokeWidth={3.5} />
         </div>
 
         <h1 className="text-[32px] font-black text-[#1a1a1a] text-center mb-3 leading-tight tracking-tight" style={{ fontWeight: 900 }}>
@@ -164,8 +164,8 @@ export default function PlanReady() {
           <div className="space-y-3">
             {getFeatures().map((feature, index) => (
               <div key={index} className="p-5 bg-white border border-gray-100 shadow-sm rounded-2xl flex items-start gap-4">
-                <div className="w-6 h-6 bg-[#22c55e] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Check size={14} className="text-white" strokeWidth={3} />
+                <div className="w-6 h-6 bg-[#A3FF3F] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check size={14} className="text-[#1a1a1a]" strokeWidth={3} />
                 </div>
                 <p className="text-[15px] text-gray-700 leading-relaxed font-medium">
                   {feature}

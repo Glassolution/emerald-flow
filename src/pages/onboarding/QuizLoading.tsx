@@ -89,10 +89,10 @@ export default function QuizLoading() {
       <div className="w-full max-w-xs space-y-5 text-left ml-4">
         {checklistItems.map((item, index) => (
           <div key={index} className="flex items-center gap-4">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${step >= index + 1 ? 'bg-[#22c55e]' : 'bg-gray-100'}`}>
-              <Check size={16} className={`${step >= index + 1 ? 'text-white' : 'text-transparent'}`} strokeWidth={3} />
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${step >= index + 1 ? 'bg-[#A3FF3F]' : 'bg-gray-100'}`}>
+              <Check size={16} className={`${step >= index + 1 ? 'text-[#1a1a1a]' : 'text-transparent'}`} strokeWidth={3} />
             </div>
-            <span className={`text-[16px] font-semibold transition-colors duration-300 ${step >= index + 1 ? 'text-[#22c55e]' : 'text-gray-300'}`}>
+            <span className={`text-[16px] font-semibold transition-colors duration-300 ${step >= index + 1 ? 'text-[#1a1a1a]' : 'text-gray-300'}`}>
               {item}
             </span>
           </div>

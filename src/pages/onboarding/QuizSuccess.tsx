@@ -61,7 +61,7 @@ export default function QuizSuccess() {
       <div className="px-6 mt-2 mb-6 shrink-0">
         <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden relative">
           <div 
-            className="h-full bg-[#22c55e] transition-all duration-500 ease-out rounded-full"
+            className="h-full bg-[#A3FF3F] transition-all duration-500 ease-out rounded-full"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -128,8 +128,8 @@ export default function QuizSuccess() {
               mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
           >
-            <div className="w-12 h-12 bg-[#22c55e] rounded-full flex items-center justify-center mx-auto mb-4">
-              <Check size={24} className="text-white" strokeWidth={3} />
+            <div className="w-12 h-12 bg-[#A3FF3F] rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check size={24} className="text-[#1a1a1a]" strokeWidth={3} />
             </div>
 
             <h3 className="text-[16px] font-bold text-white mb-2">
