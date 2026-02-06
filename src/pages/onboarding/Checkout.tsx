@@ -52,7 +52,7 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { completeOnboarding } = useOnboarding();
   const { toast } = useToast();
-  const { refreshUser } = useAuth();
+  const { refreshUser, user } = useAuth();
   
   // Carousel
   const [emblaRef] = useEmblaCarousel({ loop: true });
@@ -231,6 +231,21 @@ export default function Checkout() {
     }
   };
 
+  const handlePayment = () => {
+    const selectedPlan = PLANS.find(p => p.id === selectedPlanId);
+    if (!selectedPlan) return;
+
+    if (user?.id) {
+      // Adiciona o ID do usuário como referência externa e o e-mail como preenchimento (se suportado)
+      const separator = selectedPlan.link.includes('?') ? '&' : '?';
+      const checkoutUrl = `${selectedPlan.link}${separator}external_reference=${user.id}&payer_email=${user.email}`;
+      window.location.href = checkoutUrl;
+    } else {
+      // Fallback caso não tenha usuário logado (não deveria acontecer aqui)
+      window.location.href = selectedPlan.link;
+    }
+  };
+
   if (step === "plans") {
     return (
       <div className="h-[100svh] bg-[#f3f4f6] flex flex-col overflow-hidden relative">
@@ -313,7 +328,7 @@ export default function Checkout() {
           </div>
 
           <button
-            onClick={() => window.location.href = selectedPlan.link}
+            onClick={handlePayment}
             className="w-full py-3.5 px-6 text-[15px] font-bold rounded-[24px] transition-all duration-300 active:scale-[0.98] bg-[#A3FF3F] text-black hover:bg-[#93F039] shadow-lg shadow-[#A3FF3F]/40"
           >
             Obter plano {selectedPlan.name} com 60% de desconto

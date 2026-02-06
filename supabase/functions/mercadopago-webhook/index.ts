@@ -27,6 +27,12 @@ type SupabaseAdminClient = {
         id: string,
         attributes: { user_metadata: Record<string, unknown> }
       ) => Promise<{ error: unknown }>;
+      listUsers: (
+        params?: { page?: number; perPage?: number }
+      ) => Promise<{
+        data: { users: SupabaseAuthUser[] };
+        error: unknown;
+      }>;
     };
   };
 };

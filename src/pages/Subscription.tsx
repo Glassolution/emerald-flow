@@ -3,11 +3,13 @@ import { X, Check } from "lucide-react";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/contexts/I18nContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Subscription() {
   const { isTrialExpired, daysRemaining } = useSubscription();
   const navigate = useNavigate();
   const { t } = useI18n();
+  const { user } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
   const [timeLeft, setTimeLeft] = useState("00:00:00.00");
 
@@ -66,7 +68,13 @@ export default function Subscription() {
   };
 
   const handleCheckout = () => {
-    window.location.href = PLANS[selectedPlan].link;
+    const link = PLANS[selectedPlan].link;
+    if (user?.id) {
+      const separator = link.includes('?') ? '&' : '?';
+      window.location.href = `${link}${separator}external_reference=${user.id}&payer_email=${user.email}`;
+    } else {
+      window.location.href = link;
+    }
   };
 
   return (
