@@ -21,6 +21,7 @@ type Plan = {
   periodLabel: string;
   saveLabel?: string;
   trialDays: number;
+  link: string;
 };
 
 const PLANS: Plan[] = [
@@ -31,7 +32,8 @@ const PLANS: Plan[] = [
     originalPrice: 124.90,
     period: "/mês",
     periodLabel: "mensal",
-    trialDays: 7
+    trialDays: 7,
+    link: "https://mpago.la/16iceTa"
   },
   {
     id: "yearly",
@@ -41,7 +43,8 @@ const PLANS: Plan[] = [
     period: "/ano",
     periodLabel: "anual",
     saveLabel: "Economize 60%",
-    trialDays: 7
+    trialDays: 7,
+    link: "https://mpago.la/1T9dTsU"
   }
 ];
 
@@ -310,7 +313,7 @@ export default function Checkout() {
           </div>
 
           <button
-            onClick={() => setStep("payment")}
+            onClick={() => window.location.href = selectedPlan.link}
             className="w-full py-3.5 px-6 text-[15px] font-bold rounded-[24px] transition-all duration-300 active:scale-[0.98] bg-[#A3FF3F] text-black hover:bg-[#93F039] shadow-lg shadow-[#A3FF3F]/40"
           >
             Obter plano {selectedPlan.name} com 60% de desconto
