@@ -145,13 +145,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log("✅ [AuthContext] Perfil salvo junto com a conta");
       }
       
-      // Fazer logout para forçar o usuário a fazer login manualmente
-      // Isso garante um fluxo limpo sem auto-login
-      if (data.user) {
-        console.log("🔄 [AuthContext] Fazendo logout após criar conta...");
-        await supabase.auth.signOut();
-        setUser(null);
-      }
+      // Se a confirmação de email estiver desligada, o usuário já estará logado
+      // O onAuthStateChange vai capturar a sessão e atualizar o estado
       
       return { user: data.user, error: null };
     } catch (error: any) {

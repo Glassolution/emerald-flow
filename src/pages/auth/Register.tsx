@@ -69,16 +69,14 @@ export default function Register() {
       setError(error.message.includes("already registered") ? t('auth.register.alreadyRegistered') : error.message);
       setIsSubmitting(false);
     } else {
-      // Conta criada com sucesso - redirecionar para login
+      // Conta criada com sucesso
       console.log("✅ [Register] Conta criada com perfil completo!");
       setSuccess(true);
       setIsSubmitting(false);
       
-      // Redirecionar para login após 1.5 segundos
-      setTimeout(() => {
-        console.log("✅ [Register] Redirecionando para login...");
-        navigate("/auth/login", { replace: true });
-      }, 1500);
+      // Se a confirmação de email estiver desativada, o usuário será redirecionado
+      // automaticamente para /app/home pelo useEffect que monitora o estado 'user'.
+      // Caso contrário, ele verá a mensagem de sucesso e poderá ir para o login.
     }
   };
 
