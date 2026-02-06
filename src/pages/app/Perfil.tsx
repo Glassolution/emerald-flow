@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, HelpCircle, ChevronRight, LogOut, Pencil, Check, X, ShieldCheck, Star, History } from "lucide-react";
+import { Settings, HelpCircle, ChevronRight, LogOut, Pencil, Check, X, ShieldCheck, Star, History, Crown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/contexts/I18nContext";
@@ -220,6 +220,29 @@ export default function Perfil() {
             )}
           </div>
           <p className="text-[#8a8a8a] font-medium text-[15px]">{userProfile?.companyName || t('profile.defaultRole')}</p>
+        </div>
+      </div>
+
+      {/* Premium Card */}
+      <div className="px-2">
+        <div 
+          onClick={() => navigate("/onboarding/checkout")}
+          className="bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-[24px] p-5 shadow-lg border border-gray-800 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden"
+        >
+          <div className="flex items-center gap-4 z-10">
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+              <Crown size={28} className="text-[#1a1a1a] fill-[#1a1a1a]/20" strokeWidth={2.5} />
+            </div>
+            <div>
+              <p className="text-[16px] font-black text-white">{t("profile.goPremium")}</p>
+              <p className="text-[13px] text-gray-400 font-medium">{t("profile.goPremiumDesc")}</p>
+            </div>
+          </div>
+          <div className="z-10">
+             <span className="bg-[#A3FF47] text-[#1a1a1a] text-[12px] font-black px-4 py-2 rounded-full shadow-lg shadow-[#A3FF47]/20">
+               {t("profile.upgrade").toUpperCase()}
+             </span>
+          </div>
         </div>
       </div>
 

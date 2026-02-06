@@ -124,7 +124,10 @@
     "nameEmptyError": "O nome não pode estar vazio.",
     "nameUpdateError": "Não foi possível atualizar o nome.",
     "nameUpdateSuccess": "Nome atualizado com sucesso!",
-    "defaultRole": "Piloto de Drones"
+    "defaultRole": "Piloto de Drones",
+    "goPremium": "Seja Premium",
+    "goPremiumDesc": "Desbloqueie recursos ilimitados",
+    "upgrade": "Assinar"
   },
   "sidebar": {
     "dashboard": "Dashboard",
