@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Calculator, RotateCcw, AlertCircle, CheckCircle2, Plus, Trash2, Package, History, Save, ChevronRight, FlaskConical, Droplets, Info, MoreVertical, Plane } from "lucide-react";
+import { Calculator, RotateCcw, AlertCircle, CheckCircle2, Plus, Trash2, Package, History, Save, ChevronRight, FlaskConical, Droplets, Info, MoreVertical, Plane, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +57,7 @@ export default function Calc() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
+  const [catalogSearch, setCatalogSearch] = useState<string>("");
 
   useEffect(() => {
     if (state?.produtoSelecionado) {
@@ -487,9 +488,27 @@ export default function Calc() {
             <DialogTitle className="text-[22px] font-bold text-[#1a1a1a]">Catálogo</DialogTitle>
             <DialogDescription className="text-[14px] text-[#8a8a8a] font-medium">Selecione um produto para o cálculo.</DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 pb-8 bg-white">
+          <div className="flex-1 overflow-y-auto px-6 pb-8 pt-3 bg-white">
+            <div className="mb-3">
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a8a8a]" />
+                <Input
+                  placeholder="Pesquisar produtos..."
+                  value={catalogSearch}
+                  onChange={(e) => setCatalogSearch(e.target.value)}
+                  className="h-10 pl-9 rounded-xl bg-[#f8f9fb] border-none text-[13px] font-bold text-[#1a1a1a] placeholder:text-[#b4b4b4]"
+                />
+              </div>
+            </div>
             <div className="space-y-3 mt-2">
-              {produtosAgricolas.map((produto) => (
+              {produtosAgricolas
+                .filter((p) =>
+                  catalogSearch
+                    ? p.nome.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+                      p.tipo.toLowerCase().includes(catalogSearch.toLowerCase())
+                    : true
+                )
+                .map((produto) => (
                 <div key={produto.id} className="p-4 bg-[#f8f9fb] rounded-2xl cursor-pointer active:scale-95 transition-all flex items-center justify-between" onClick={() => adicionarProdutoDoCatalogo(produto)}>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">

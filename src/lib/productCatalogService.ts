@@ -158,36 +158,21 @@ export async function addCustomProduct(
   }
 
   try {
-    // Validar campos obrigatórios antes de tentar inserir
-    if (!product.name || !product.category || !product.description) {
-      return {
-        product: null,
-        error: new Error("Campos obrigatórios faltando: nome, categoria ou descrição são necessários"),
-      };
+    // Validar campo mínimo obrigatório
+    if (!product.name || String(product.name).trim() === "") {
+      return { product: null, error: new Error("Informe ao menos o nome do produto") };
     }
 
-    if (product.dose_value === undefined || product.dose_value === null) {
-      return {
-        product: null,
-        error: new Error("Campo obrigatório faltando: dose_value é necessário"),
-      };
-    }
-
-    if (!product.dose_unit) {
-      return {
-        product: null,
-        error: new Error("Campo obrigatório faltando: dose_unit é necessário"),
-      };
-    }
-
-    // Preparar dados básicos obrigatórios
+    // Preparar dados com valores padrão para campos opcionais
     const baseData: Record<string, any> = {
       user_id: userId,
       name: String(product.name).trim(),
-      category: String(product.category).trim(),
-      description: String(product.description).trim(),
-      dose_value: Number(product.dose_value),
-      dose_unit: String(product.dose_unit).trim(),
+      category: String(product.category || "Adjuvante").trim(),
+      description: String(product.description || "").trim(),
+      dose_value: product.dose_value !== undefined && product.dose_value !== null
+        ? Number(product.dose_value)
+        : 0,
+      dose_unit: String(product.dose_unit || "mL").trim(),
     };
 
     // Campos opcionais que podem não existir na tabela

@@ -210,7 +210,7 @@ export function AddProductModal({
           {/* Categoria */}
           <div>
             <Label htmlFor="category" className="text-[13px] font-medium mb-2 block">
-              Categoria *
+              Categoria (opcional)
             </Label>
             <Select value={category} onValueChange={(value: ProductCategory) => setCategory(value)}>
               <SelectTrigger className="h-11 rounded-xl">
@@ -229,7 +229,7 @@ export function AddProductModal({
           {/* Descrição */}
           <div>
             <Label htmlFor="description" className="text-[13px] font-medium mb-2 block">
-              Descrição *
+              Descrição (opcional)
             </Label>
             <Textarea
               id="description"
@@ -237,7 +237,6 @@ export function AddProductModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Para que serve este produto..."
               className="min-h-[80px] rounded-xl"
-              required
             />
           </div>
 
@@ -245,7 +244,7 @@ export function AddProductModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="doseValue" className="text-[13px] font-medium mb-2 block">
-                Dose Recomendada *
+                Dose Recomendada (opcional)
               </Label>
               <Input
                 id="doseValue"
@@ -255,12 +254,11 @@ export function AddProductModal({
                 onChange={(e) => setDoseValue(e.target.value)}
                 placeholder="Ex: 200"
                 className="h-11 rounded-xl"
-                required
               />
             </div>
             <div>
               <Label htmlFor="doseUnit" className="text-[13px] font-medium mb-2 block">
-                Unidade *
+                Unidade (opcional)
               </Label>
               <Select
                 value={doseUnit}
@@ -408,4 +406,3 @@ export function AddProductModal({
     </Dialog>
   );
 }
-
