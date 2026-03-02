@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, HelpCircle, ChevronRight, LogOut, Pencil, Check, X, ShieldCheck, Star, History, Crown } from "lucide-react";
+import { Settings, HelpCircle, ChevronRight, LogOut, Check, X, ShieldCheck, Star, History, Crown, Calendar } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/contexts/I18nContext";
@@ -9,12 +9,49 @@ import { getUserStats, UserStats } from "@/lib/userStats";
 import { getAvatarUrl } from "@/lib/avatarService";
 import { AvatarPicker } from "@/components/profile/AvatarPicker";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/lib/supabase";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type SubscriptionInfo = {
+  status: string;
+  plan: string;
+  expiresAt: string | null;
+  activatedAt: string | null;
+  paymentMethod: string | null;
+  daysSincePurchase: number | null;
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatExpiryShort(isoDate: string | null): string {
+  if (!isoDate) return "—";
+  const d = new Date(isoDate);
+  const now = new Date();
+  const diff = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff <= 0) return "Expirado";
+  if (diff === 1) return "Vence amanhã";
+  if (diff <= 30) return `Vence em ${diff} dias`;
+  return `Vence ${d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
+}
+
+function formatExpiryFull(isoDate: string | null): string {
+  if (!isoDate) return "—";
+  return new Date(isoDate).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Perfil() {
   const { toast } = useToast();
   const { user, signOut } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
+
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -24,13 +61,19 @@ export default function Perfil() {
   const [isSavingName, setIsSavingName] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Subscription state
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
+  const [showManageSheet, setShowManageSheet] = useState(false);
+  const [cancelStep, setCancelStep] = useState<"idle" | "confirm" | "loading" | "done">("idle");
+  const [refundStep, setRefundStep] = useState<"idle" | "confirm" | "loading" | "done">("idle");
+
   useEffect(() => {
     let isMounted = true;
-    
+
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        
+
         if (!user) {
           setIsLoading(false);
           return;
@@ -66,6 +109,49 @@ export default function Perfil() {
         } catch (avatarError) {
           console.error("Erro ao carregar avatar:", avatarError);
         }
+
+        // Carregar informações de assinatura
+        try {
+          const meta = user?.user_metadata ?? {};
+          const subStatus = meta.subscription_status as string | undefined;
+
+          if (subStatus === "trial_active" || subStatus === "subscription_active") {
+            const { data: latestPayment } = await supabase
+              .from("payments")
+              .select("expires_at, created_at, payment_id, plan, method")
+              .eq("user_id", user.id)
+              .eq("status", "approved")
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .single();
+
+            const expiresAt =
+              latestPayment?.expires_at ??
+              (subStatus === "trial_active"
+                ? (meta.subscription_trial_ends_at as string | undefined) ?? null
+                : null);
+
+            const daysSincePurchase = latestPayment?.created_at
+              ? Math.floor(
+                  (Date.now() - new Date(latestPayment.created_at).getTime()) /
+                    (1000 * 60 * 60 * 24)
+                )
+              : null;
+
+            if (isMounted) {
+              setSubscriptionInfo({
+                status: subStatus,
+                plan: (meta.subscription_plan as string) || latestPayment?.plan || "monthly",
+                expiresAt,
+                activatedAt: latestPayment?.created_at ?? null,
+                paymentMethod: latestPayment?.method ?? null,
+                daysSincePurchase,
+              });
+            }
+          }
+        } catch (subError) {
+          console.error("Erro ao carregar assinatura:", subError);
+        }
       } catch (error) {
         console.error("Erro geral ao carregar dados do perfil:", error);
       } finally {
@@ -82,9 +168,9 @@ export default function Perfil() {
     };
   }, [user]);
 
-  const firstName = userProfile?.fullName 
-    ? (userProfile.fullName.trim().split(/\s+/)[0] || t('profile.defaultUser'))
-    : t('profile.defaultUser');
+  const firstName = userProfile?.fullName
+    ? userProfile.fullName.trim().split(/\s+/)[0] || t("profile.defaultUser")
+    : t("profile.defaultUser");
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -103,7 +189,10 @@ export default function Perfil() {
     }
 
     setIsSavingName(true);
-    const { error } = await saveUserProfile({ fullName: editedName.trim(), companyName: userProfile?.companyName || "" });
+    const { error } = await saveUserProfile({
+      fullName: editedName.trim(),
+      companyName: userProfile?.companyName || "",
+    });
     setIsSavingName(false);
 
     if (error) {
@@ -113,7 +202,7 @@ export default function Perfil() {
         variant: "destructive",
       });
     } else {
-      setUserProfile((prev) => prev ? { ...prev, fullName: editedName.trim() } : null);
+      setUserProfile((prev) => (prev ? { ...prev, fullName: editedName.trim() } : null));
       setIsEditingName(false);
       toast({
         title: t("common.success"),
@@ -129,11 +218,9 @@ export default function Perfil() {
 
   const handleAvatarChange = (newUrl: string | null) => {
     try {
-      // Adicionar timestamp para evitar cache da imagem
       if (newUrl) {
-        // Remover timestamp anterior se existir
-        const cleanUrl = newUrl.split('?')[0].split('&')[0];
-        const separator = cleanUrl.includes('?') ? '&' : '?';
+        const cleanUrl = newUrl.split("?")[0].split("&")[0];
+        const separator = cleanUrl.includes("?") ? "&" : "?";
         const urlWithTimestamp = `${cleanUrl}${separator}t=${Date.now()}`;
         setAvatarUrl(urlWithTimestamp);
       } else {
@@ -144,30 +231,82 @@ export default function Perfil() {
     }
   };
 
-  const handleViewCalculations = () => {
-    navigate("/app/calculos");
+  const handleViewCalculations = () => navigate("/app/calculos");
+  const handleViewSaved = () => navigate("/app/favoritos");
+  const handleViewHelp = () => navigate("/app/ajuda");
+
+  const handleCancelSubscription = async () => {
+    setCancelStep("loading");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const res = await fetch("/api/cancel-subscription", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro ao cancelar");
+      setCancelStep("done");
+      toast({
+        title: "Assinatura cancelada",
+        description: data.message ?? "Você mantém o acesso até o fim do período pago.",
+      });
+      setSubscriptionInfo((prev) => (prev ? { ...prev, status: "cancelled" } : null));
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      setCancelStep("idle");
+    }
   };
 
-  const handleViewSaved = () => {
-    navigate("/app/favoritos");
+  const handleRequestRefund = async () => {
+    setRefundStep("loading");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const res = await fetch("/api/request-refund", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro ao solicitar reembolso");
+      setRefundStep("done");
+      toast({
+        title: "Reembolso solicitado",
+        description: data.message ?? "Você receberá o estorno em breve.",
+      });
+      setSubscriptionInfo((prev) => (prev ? { ...prev, status: "cancelled" } : null));
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      setRefundStep("idle");
+    }
   };
 
-  const handleViewHelp = () => {
-    navigate("/app/ajuda");
+  const isProActive =
+    subscriptionInfo?.status === "trial_active" ||
+    subscriptionInfo?.status === "subscription_active";
+  const isTrial = subscriptionInfo?.status === "trial_active";
+  const planLabel = subscriptionInfo?.plan === "yearly" ? "Anual" : "Mensal";
+  const canRefund =
+    (subscriptionInfo?.daysSincePurchase ?? 999) <= 7 &&
+    subscriptionInfo?.paymentMethod !== null;
+
+  const closeSheet = () => {
+    setShowManageSheet(false);
+    setCancelStep("idle");
+    setRefundStep("idle");
   };
 
-  // Sempre renderizar algo, mesmo durante loading (evita tela branca)
   return (
-    <div 
+    <div
       className="pb-6 space-y-8 bg-white min-h-screen min-h-[100dvh]"
-      style={{
-        paddingTop: "calc(env(safe-area-inset-top) + 1rem)"
-      }}
+      style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
     >
       {/* Top Bar */}
       <div className="flex items-center justify-between px-2">
         <h1 className="text-[24px] font-black tracking-tight text-[#1a1a1a]">Calc</h1>
-        <button 
+        <button
           onClick={() => navigate("/app/configuracoes")}
           className="w-10 h-10 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center active:scale-90 transition-all"
         >
@@ -179,13 +318,16 @@ export default function Perfil() {
       <div className="flex flex-col items-center">
         {/* Avatar with Circular Border */}
         <div className="relative mb-6">
-          <div className="absolute inset-0 -m-2 border-2 border-emerald-500 rounded-full" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 60%, 0 60%)' }} />
+          <div
+            className="absolute inset-0 -m-2 border-2 border-emerald-500 rounded-full"
+            style={{ clipPath: "polygon(0 0, 100% 0, 100% 60%, 0 60%)" }}
+          />
           {isLoading ? (
             <div className="w-40 h-40 rounded-full bg-gray-200 animate-pulse flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500" />
             </div>
           ) : (
-            <div key={avatarUrl || 'no-avatar'}>
+            <div key={avatarUrl || "no-avatar"}>
               <AvatarPicker
                 avatarUrl={avatarUrl || null}
                 onAvatarChange={handleAvatarChange}
@@ -207,43 +349,85 @@ export default function Perfil() {
                   className="h-10 text-center font-bold text-[24px] w-48 border-none bg-transparent focus-visible:ring-0"
                   autoFocus
                 />
-                <button onClick={handleSaveName} disabled={isSavingName} className="text-emerald-500"><Check size={20} /></button>
-                <button onClick={handleCancelEdit} className="text-red-500"><X size={20} /></button>
+                <button
+                  onClick={handleSaveName}
+                  disabled={isSavingName}
+                  className="text-emerald-500"
+                >
+                  <Check size={20} />
+                </button>
+                <button onClick={handleCancelEdit} className="text-red-500">
+                  <X size={20} />
+                </button>
               </div>
             ) : (
               <>
-                <h2 className="text-[28px] font-bold text-[#1a1a1a] tracking-tight cursor-pointer" onClick={() => setIsEditingName(true)}>
+                <h2
+                  className="text-[28px] font-bold text-[#1a1a1a] tracking-tight cursor-pointer"
+                  onClick={() => setIsEditingName(true)}
+                >
                   {firstName}
                 </h2>
                 <ShieldCheck size={22} className="text-blue-500 fill-blue-500/20" />
               </>
             )}
           </div>
-          <p className="text-[#8a8a8a] font-medium text-[15px]">{userProfile?.companyName || t('profile.defaultRole')}</p>
+          <p className="text-[#8a8a8a] font-medium text-[15px]">
+            {userProfile?.companyName || t("profile.defaultRole")}
+          </p>
         </div>
       </div>
 
-      {/* Premium Card */}
+      {/* Pro Card or Premium Upgrade Card */}
       <div className="px-2">
-        <div 
-          onClick={() => navigate("/onboarding/checkout")}
-          className="bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-[24px] p-5 shadow-lg border border-gray-800 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden"
-        >
-          <div className="flex items-center gap-4 z-10">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Crown size={28} className="text-[#1a1a1a] fill-[#1a1a1a]/20" strokeWidth={2.5} />
+        {isProActive ? (
+          /* ── Calc Pro active card ── */
+          <div
+            onClick={() => setShowManageSheet(true)}
+            className="bg-white rounded-[24px] p-5 shadow-sm border border-emerald-100 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+                <Crown size={22} className="text-emerald-500" strokeWidth={2} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-[15px] font-bold text-[#1a1a1a]">
+                    Calc Pro · {planLabel}
+                  </p>
+                  <span className="bg-emerald-50 text-emerald-600 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide">
+                    {isTrial ? "Trial" : "Ativo"}
+                  </span>
+                </div>
+                <p className="text-[12px] text-[#8a8a8a] font-medium mt-0.5">
+                  {formatExpiryShort(subscriptionInfo?.expiresAt ?? null)}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-[16px] font-black text-white">{t("profile.goPremium")}</p>
-              <p className="text-[13px] text-gray-400 font-medium">{t("profile.goPremiumDesc")}</p>
+            <ChevronRight size={18} className="text-gray-300" />
+          </div>
+        ) : (
+          /* ── Premium upgrade card ── */
+          <div
+            onClick={() => navigate("/onboarding/checkout")}
+            className="bg-gradient-to-r from-[#1a1a1a] to-[#2a2a2a] rounded-[24px] p-5 shadow-lg border border-gray-800 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all relative overflow-hidden"
+          >
+            <div className="flex items-center gap-4 z-10">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                <Crown size={28} className="text-[#1a1a1a] fill-[#1a1a1a]/20" strokeWidth={2.5} />
+              </div>
+              <div>
+                <p className="text-[16px] font-black text-white">{t("profile.goPremium")}</p>
+                <p className="text-[13px] text-gray-400 font-medium">{t("profile.goPremiumDesc")}</p>
+              </div>
+            </div>
+            <div className="z-10">
+              <span className="bg-[#A3FF47] text-[#1a1a1a] text-[12px] font-black px-4 py-2 rounded-full shadow-lg shadow-[#A3FF47]/20">
+                {t("profile.upgrade").toUpperCase()}
+              </span>
             </div>
           </div>
-          <div className="z-10">
-             <span className="bg-[#A3FF47] text-[#1a1a1a] text-[12px] font-black px-4 py-2 rounded-full shadow-lg shadow-[#A3FF47]/20">
-               {t("profile.upgrade").toUpperCase()}
-             </span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Completion Status Card */}
@@ -253,7 +437,17 @@ export default function Perfil() {
             <div className="w-14 h-14 rounded-full border-4 border-emerald-500/20 flex items-center justify-center relative">
               <span className="text-[14px] font-bold text-emerald-600">60%</span>
               <svg className="absolute inset-0 w-full h-full -rotate-90">
-                <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" strokeWidth="4" className="text-emerald-500" strokeDasharray="150.79" strokeDashoffset="60.3" />
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  className="text-emerald-500"
+                  strokeDasharray="150.79"
+                  strokeDashoffset="60.3"
+                />
               </svg>
             </div>
             <div>
@@ -261,7 +455,7 @@ export default function Perfil() {
               <p className="text-[13px] text-[#8a8a8a]">{t("profile.completeProfileDesc")}</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => setIsEditingName(true)}
             className="px-5 py-2.5 rounded-full border border-[#1a1a1a] text-[14px] font-bold text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-all"
           >
@@ -272,7 +466,7 @@ export default function Perfil() {
 
       {/* Stats and Items List */}
       <div className="px-2 space-y-1">
-        <div 
+        <div
           className="p-4 flex items-center justify-between group active:bg-gray-50 rounded-2xl transition-all cursor-pointer"
           onClick={handleViewCalculations}
         >
@@ -281,7 +475,9 @@ export default function Perfil() {
               <Star size={24} className="text-amber-500 fill-amber-500/20" />
             </div>
             <div>
-              <p className="text-[16px] font-bold text-[#1a1a1a]">{userStats?.totalCalculations || 0} {t("profile.calculations")}</p>
+              <p className="text-[16px] font-bold text-[#1a1a1a]">
+                {userStats?.totalCalculations || 0} {t("profile.calculations")}
+              </p>
               <p className="text-[13px] text-[#8a8a8a] font-medium">{t("profile.calculationsDesc")}</p>
             </div>
           </div>
@@ -290,7 +486,7 @@ export default function Perfil() {
 
         <div className="w-full h-px bg-gray-100 mx-4" />
 
-        <div 
+        <div
           className="p-4 flex items-center justify-between group active:bg-gray-50 rounded-2xl transition-all cursor-pointer"
           onClick={handleViewSaved}
         >
@@ -299,7 +495,9 @@ export default function Perfil() {
               <History size={24} className="text-blue-500" />
             </div>
             <div>
-              <p className="text-[16px] font-bold text-[#1a1a1a]">{userStats?.savedCalculations || 0} {t("profile.saved")}</p>
+              <p className="text-[16px] font-bold text-[#1a1a1a]">
+                {userStats?.savedCalculations || 0} {t("profile.saved")}
+              </p>
               <p className="text-[13px] text-[#8a8a8a] font-medium">{t("profile.savedDesc")}</p>
             </div>
           </div>
@@ -308,7 +506,7 @@ export default function Perfil() {
 
         <div className="w-full h-px bg-gray-100 mx-4" />
 
-        <div 
+        <div
           className="p-4 flex items-center justify-between group active:bg-gray-50 rounded-2xl transition-all cursor-pointer"
           onClick={handleViewHelp}
         >
@@ -336,6 +534,158 @@ export default function Perfil() {
           {isLoggingOut ? t("profile.loggingOut") : t("profile.logout")}
         </button>
       </div>
+
+      {/* ─────────────────────────────────────────────────────────────────────
+          Manage Subscription Bottom Sheet
+      ───────────────────────────────────────────────────────────────────── */}
+      {showManageSheet && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40" onClick={closeSheet} />
+
+          {/* Sheet */}
+          <div className="relative bg-white rounded-t-[32px] px-6 pt-5 pb-10 space-y-5">
+            {/* Handle bar */}
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto" />
+
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                <Crown size={20} className="text-emerald-500" strokeWidth={2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[17px] font-bold text-[#1a1a1a] leading-tight">
+                  Calc Pro · {planLabel}
+                </p>
+                <p className="text-[12px] text-[#8a8a8a] font-medium">
+                  {isTrial ? "Período de teste gratuito" : "Assinatura ativa"}
+                </p>
+              </div>
+              <span className="bg-emerald-50 text-emerald-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wide shrink-0">
+                {isTrial ? "Trial" : "Ativo"}
+              </span>
+            </div>
+
+            {/* Expiry info card */}
+            <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-3">
+              <Calendar size={17} className="text-gray-400 shrink-0" />
+              <div>
+                <p className="text-[11px] text-[#8a8a8a] font-medium uppercase tracking-wide">
+                  Vencimento do plano
+                </p>
+                <p className="text-[15px] font-bold text-[#1a1a1a] mt-0.5">
+                  {formatExpiryFull(subscriptionInfo?.expiresAt ?? null)}
+                </p>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-gray-100" />
+
+            {/* Actions */}
+            {cancelStep === "done" || refundStep === "done" ? (
+              /* Success state */
+              <div className="bg-emerald-50 rounded-2xl p-4 text-center space-y-1">
+                <p className="text-[14px] font-bold text-emerald-700">Ação concluída</p>
+                <p className="text-[12px] text-emerald-600">
+                  Você mantém o acesso até o fim do período pago.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* ── Cancel subscription ── */}
+                {cancelStep === "idle" && (
+                  <button
+                    onClick={() => setCancelStep("confirm")}
+                    className="w-full py-3.5 rounded-2xl border border-gray-200 text-[14px] font-semibold text-[#4a4a4a] bg-white active:bg-gray-50 transition-all"
+                  >
+                    Cancelar assinatura
+                  </button>
+                )}
+
+                {cancelStep === "confirm" && (
+                  <div className="bg-red-50 rounded-2xl p-4 space-y-3">
+                    <p className="text-[13px] font-bold text-red-600">Cancelar assinatura?</p>
+                    <p className="text-[12px] text-red-500 leading-relaxed">
+                      Você continuará com acesso até{" "}
+                      <strong>{formatExpiryFull(subscriptionInfo?.expiresAt ?? null)}</strong>. Após
+                      esse prazo, o acesso será encerrado.
+                    </p>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={() => setCancelStep("idle")}
+                        className="flex-1 py-2.5 rounded-xl border border-gray-200 text-[13px] font-semibold text-[#4a4a4a] bg-white"
+                      >
+                        Voltar
+                      </button>
+                      <button
+                        onClick={handleCancelSubscription}
+                        className="flex-1 py-2.5 rounded-xl bg-red-500 text-[13px] font-bold text-white active:scale-95 transition-all"
+                      >
+                        Confirmar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {cancelStep === "loading" && (
+                  <div className="flex items-center justify-center py-3 gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-red-400" />
+                    <span className="text-[13px] text-[#8a8a8a]">Cancelando assinatura…</span>
+                  </div>
+                )}
+
+                {/* ── Refund (within 7 days) ── */}
+                {canRefund && cancelStep === "idle" && (
+                  <>
+                    {refundStep === "idle" && (
+                      <button
+                        onClick={() => setRefundStep("confirm")}
+                        className="w-full py-3.5 rounded-2xl bg-amber-50 border border-amber-100 text-[14px] font-semibold text-amber-700 active:scale-[0.98] transition-all"
+                      >
+                        Solicitar reembolso
+                        <span className="block text-[11px] font-normal text-amber-500 mt-0.5">
+                          Disponível por 7 dias · CDC Art. 49
+                        </span>
+                      </button>
+                    )}
+
+                    {refundStep === "confirm" && (
+                      <div className="bg-amber-50 rounded-2xl p-4 space-y-3">
+                        <p className="text-[13px] font-bold text-amber-700">Confirmar reembolso?</p>
+                        <p className="text-[12px] text-amber-600 leading-relaxed">
+                          O valor pago será estornado e sua assinatura cancelada imediatamente.
+                        </p>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => setRefundStep("idle")}
+                            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-[13px] font-semibold text-[#4a4a4a] bg-white"
+                          >
+                            Voltar
+                          </button>
+                          <button
+                            onClick={handleRequestRefund}
+                            className="flex-1 py-2.5 rounded-xl bg-amber-500 text-[13px] font-bold text-white active:scale-95 transition-all"
+                          >
+                            Confirmar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {refundStep === "loading" && (
+                      <div className="flex items-center justify-center py-3 gap-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-amber-400" />
+                        <span className="text-[13px] text-[#8a8a8a]">Solicitando reembolso…</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
