@@ -90,10 +90,12 @@ const App = () => (
                 <Route path="/auth/login" element={<Login />} />
                 <Route path="/auth/register" element={<Register />} />
                 
+                {/* Subscription — público: novos usuários pagam para criar conta */}
+                <Route path="/subscription" element={<Subscription />} />
+
                 {/* Profile Setup - Protected but separate route */}
                 <Route element={<ProtectedRoute />}>
                   <Route path="/auth/profile-setup" element={<ProfileSetup />} />
-                  <Route path="/subscription" element={<Subscription />} />
                 </Route>
                 
                 {/* Protected App Routes - requires login */}

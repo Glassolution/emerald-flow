@@ -63,8 +63,18 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     const storageKey = `trial_start_${user.id}`;
     const storedStart = localStorage.getItem(storageKey);
-    
-    // Check payment status (simulated for now, could be in localStorage too)
+
+    // 1. Verifica subscription_status no user_metadata do Supabase (atualizado pela API/webhook)
+    const metaStatus = user.user_metadata?.subscription_status as string | undefined;
+    if (metaStatus === "trial_active" || metaStatus === "subscription_active") {
+      setHasPaid(true);
+      setIsTrialExpired(false);
+      // Sincroniza com localStorage para acesso offline
+      localStorage.setItem(`has_paid_${user.id}`, "true");
+      return;
+    }
+
+    // 2. Verifica localStorage (compatibilidade com fluxo anterior)
     const paymentKey = `has_paid_${user.id}`;
     const storedPayment = localStorage.getItem(paymentKey);
     if (storedPayment === 'true') {
