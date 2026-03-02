@@ -1,12 +1,18 @@
 import { useState, useEffect, useRef } from "react";
-import { X, ChevronLeft, Calendar, Lock, Copy, Check } from "lucide-react";
+import { X, ChevronLeft, Calendar, Lock, Copy, Check, AlertTriangle } from "lucide-react";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { createClient } from "@supabase/supabase-js";
 import useEmblaCarousel from "embla-carousel-react";
 import iphoneImg from "@/assets/iphone.png";
 import calcIcon from "@/assets/calc.png";
+
+const supabaseClient = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 type PlanId = "monthly" | "yearly";
 type PaymentMethod = "card" | "pix";
@@ -37,6 +43,245 @@ interface PixData {
   ticketUrl: string | null;
   expiresAt: string;
 }
+
+// ─── Componente de gerenciamento de assinatura ───────────────────────────────
+
+function ManageSubscription() {
+  const { user, refreshUser } = useAuth();
+  const { checkTrialStatus } = useSubscription();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isRefunding, setIsRefunding] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"refund" | "cancel" | null>(null);
+
+  const meta = user?.user_metadata ?? {};
+  const plan = meta.subscription_plan as string | undefined;
+  const planAmount = meta.subscription_plan_amount as number | undefined;
+  const updatedAt = meta.subscription_updated_at as string | undefined;
+  const status = meta.subscription_status as string | undefined;
+
+  const purchaseDate = updatedAt ? new Date(updatedAt) : null;
+  const daysSincePurchase = purchaseDate
+    ? (Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24)
+    : 99;
+  const daysLeftForRefund = Math.max(0, 7 - Math.floor(daysSincePurchase));
+  const canRefund = daysLeftForRefund > 0 && status !== "cancelled";
+  const isCancelled = status === "cancelled";
+
+  const planLabel = plan === "yearly" ? "Anual" : "Mensal";
+
+  const getAuthToken = async () => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    return session?.access_token ?? null;
+  };
+
+  const handleRefund = async () => {
+    setIsRefunding(true);
+    setConfirmAction(null);
+    try {
+      const token = await getAuthToken();
+      if (!token) throw new Error("Sessão expirada. Faça login novamente.");
+
+      const res = await fetch("/api/request-refund", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast({
+          title: "Erro no estorno",
+          description: data.message ?? data.error ?? "Não foi possível processar o estorno.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await refreshUser();
+      checkTrialStatus();
+      toast({ title: "Estorno solicitado", description: data.message });
+      navigate("/app/home", { replace: true });
+    } catch (err: unknown) {
+      toast({
+        title: "Erro",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefunding(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    setIsCancelling(true);
+    setConfirmAction(null);
+    try {
+      const token = await getAuthToken();
+      if (!token) throw new Error("Sessão expirada. Faça login novamente.");
+
+      const res = await fetch("/api/cancel-subscription", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toast({
+          title: "Erro ao cancelar",
+          description: data.message ?? data.error ?? "Não foi possível cancelar.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await refreshUser();
+      checkTrialStatus();
+      toast({ title: "Plano cancelado", description: data.message });
+    } catch (err: unknown) {
+      toast({
+        title: "Erro",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  return (
+    <div className="h-[100svh] bg-[#f3f4f6] flex flex-col px-6 py-8 overflow-y-auto">
+      <h1 className="text-[22px] font-black text-[#1a1a1a] mb-1">Minha Assinatura</h1>
+      <p className="text-[13px] text-gray-400 mb-6">Gerencie seu plano CALC Pro</p>
+
+      {/* Card do plano */}
+      <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[13px] font-semibold text-gray-500">Plano atual</span>
+          <span
+            className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+              isCancelled
+                ? "bg-red-100 text-red-600"
+                : "bg-green-100 text-green-700"
+            }`}
+          >
+            {isCancelled ? "Cancelado" : "Ativo"}
+          </span>
+        </div>
+        <p className="text-[20px] font-black text-[#1a1a1a]">
+          CALC Pro — {planLabel}
+        </p>
+        {planAmount && (
+          <p className="text-[14px] text-gray-500 mt-0.5">
+            R$ {Number(planAmount).toFixed(2).replace(".", ",")}
+            {plan === "yearly" ? "/ano" : "/mês"}
+          </p>
+        )}
+        {purchaseDate && (
+          <p className="text-[12px] text-gray-400 mt-2">
+            Ativado em {purchaseDate.toLocaleDateString("pt-BR")}
+          </p>
+        )}
+      </div>
+
+      {/* Estorno — visível dentro dos 7 dias */}
+      {canRefund && (
+        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle size={16} className="text-amber-500" />
+            <span className="text-[13px] font-semibold text-[#1a1a1a]">Direito de Arrependimento</span>
+          </div>
+          <p className="text-[12px] text-gray-500 mb-4 leading-relaxed">
+            Você tem <strong>{daysLeftForRefund} dia{daysLeftForRefund !== 1 ? "s" : ""}</strong> para
+            solicitar estorno gratuito (CDC Art. 49). Após esse prazo, o estorno não será possível.
+          </p>
+
+          {confirmAction === "refund" ? (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+              <p className="text-[13px] text-red-700 font-semibold text-center">
+                Confirmar estorno de R$ {Number(planAmount ?? 0).toFixed(2).replace(".", ",")}?
+              </p>
+              <p className="text-[11px] text-red-600 text-center">
+                Você perderá o acesso premium imediatamente.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmAction(null)}
+                  className="flex-1 py-2.5 text-[13px] font-semibold rounded-xl border border-gray-200 bg-white text-gray-600"
+                >
+                  Não, voltar
+                </button>
+                <button
+                  onClick={handleRefund}
+                  disabled={isRefunding}
+                  className="flex-1 py-2.5 text-[13px] font-bold rounded-xl bg-red-600 text-white disabled:opacity-50"
+                >
+                  {isRefunding ? "Processando..." : "Sim, estornar"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmAction("refund")}
+              className="w-full py-3 text-[14px] font-bold rounded-xl border-2 border-red-500 text-red-500 hover:bg-red-50 transition-colors"
+            >
+              Solicitar Estorno — R$ {Number(planAmount ?? 0).toFixed(2).replace(".", ",")}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Cancelar plano */}
+      {!isCancelled && (
+        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
+          <p className="text-[13px] font-semibold text-[#1a1a1a] mb-1">Cancelar plano</p>
+          <p className="text-[12px] text-gray-500 mb-4 leading-relaxed">
+            Ao cancelar, seu acesso premium continua até o fim do período já pago.
+          </p>
+
+          {confirmAction === "cancel" ? (
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+              <p className="text-[13px] text-gray-700 font-semibold text-center">
+                Confirmar cancelamento?
+              </p>
+              <p className="text-[11px] text-gray-500 text-center">
+                Seu acesso continuará até o fim do período pago.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmAction(null)}
+                  className="flex-1 py-2.5 text-[13px] font-semibold rounded-xl border border-gray-200 bg-white text-gray-600"
+                >
+                  Não, voltar
+                </button>
+                <button
+                  onClick={handleCancel}
+                  disabled={isCancelling}
+                  className="flex-1 py-2.5 text-[13px] font-bold rounded-xl bg-gray-900 text-white disabled:opacity-50"
+                >
+                  {isCancelling ? "Cancelando..." : "Sim, cancelar"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmAction("cancel")}
+              className="w-full py-3 text-[14px] font-semibold rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cancelar plano
+            </button>
+          )}
+        </div>
+      )}
+
+      <p className="text-[11px] text-gray-400 text-center mt-2">
+        Dúvidas? Entre em contato com o suporte.
+      </p>
+    </div>
+  );
+}
+
+// ─── Subscription principal ───────────────────────────────────────────────────
 
 export default function Subscription() {
   const { isTrialExpired, checkTrialStatus } = useSubscription();
@@ -314,6 +559,16 @@ export default function Subscription() {
       setIsSubmitting(false);
     }
   };
+
+  // ─── Gerenciamento de assinatura (usuário já assinou) ────────────────────
+  const subStatus = user?.user_metadata?.subscription_status as string | undefined;
+  if (
+    subStatus === "trial_active" ||
+    subStatus === "subscription_active" ||
+    subStatus === "cancelled"
+  ) {
+    return <ManageSubscription />;
+  }
 
   // ─── Tela de sucesso ──────────────────────────────────────────────────────
   if (step === "success") {

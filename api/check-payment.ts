@@ -80,6 +80,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       });
 
+      // Atualiza status do pagamento na tabela payments para 'approved'
+      // e define expires_at com base no plano
+      const { data: pendingPayment } = await supabase
+        .from("payments")
+        .select("id, plan")
+        .eq("payment_id", String(paymentId))
+        .eq("status", "pending")
+        .single();
+
+      if (pendingPayment) {
+        const expiresAt = new Date();
+        if (pendingPayment.plan === "yearly") {
+          expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+        } else {
+          expiresAt.setDate(expiresAt.getDate() + 30);
+        }
+
+        await supabase
+          .from("payments")
+          .update({
+            status: "approved",
+            expires_at: expiresAt.toISOString(),
+          })
+          .eq("id", pendingPayment.id);
+      }
+
       // Envia email de configuração de senha (se ainda não enviado)
       await fetch(`${supabaseUrl}/auth/v1/recover`, {
         method: "POST",

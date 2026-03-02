@@ -120,6 +120,21 @@ async function handlePix(
   const userId = await findOrCreateUser(supabase, supabaseUrl, serviceKey, email, meta);
   if (!userId) return { error: "user_creation_failed" };
 
+  // Registra pagamento na tabela payments (acesso expira após 30 dias para PIX)
+  const pixExpiresAt = new Date();
+  pixExpiresAt.setDate(pixExpiresAt.getDate() + (planId === "yearly" ? 365 : 30));
+
+  await supabase.from("payments").insert({
+    user_id: userId,
+    payment_id: String(pixData.id),
+    preapproval_id: null,
+    plan: planId,
+    amount: plan.amount,
+    method: "pix",
+    status: "pending",          // será atualizado para 'approved' quando PIX for confirmado
+    expires_at: pixExpiresAt.toISOString(),
+  });
+
   const txData = pixData.point_of_interaction?.transaction_data;
 
   return {
@@ -226,7 +241,26 @@ async function handleCard(
   const userId = await findOrCreateUser(supabase, supabaseUrl, serviceKey, email, meta);
   if (!userId) return { error: "user_creation_failed" };
 
-  // 4. Enviar email de configuração de senha
+  // 4. Registra pagamento na tabela payments
+  const cardExpiresAt = new Date();
+  if (planId === "yearly") {
+    cardExpiresAt.setFullYear(cardExpiresAt.getFullYear() + 1);
+  } else {
+    cardExpiresAt.setDate(cardExpiresAt.getDate() + 30);
+  }
+
+  await supabase.from("payments").insert({
+    user_id: userId,
+    payment_id: preapprovalData.id,   // para cartão, payment_id é o preapproval_id
+    preapproval_id: preapprovalData.id,
+    plan: planId,
+    amount: plan.amount,
+    method: "card",
+    status: "approved",
+    expires_at: cardExpiresAt.toISOString(),
+  });
+
+  // 5. Enviar email de configuração de senha
   await sendPasswordResetEmail(supabaseUrl, serviceKey, email);
 
   return {
