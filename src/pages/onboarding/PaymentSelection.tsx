@@ -146,7 +146,7 @@ export default function PaymentSelection() {
           <div className="space-y-3 mb-6">
             <div className="flex justify-between text-[14px]">
               <span className="text-gray-400">Preço</span>
-              <span className="text-[#1a1a1a]">R$ 49,90</span>
+              <span className="text-[#1a1a1a]">R$ 1,00</span>
             </div>
             <div className="flex justify-between text-[14px]">
               <span className="text-gray-400">Cupom</span>
@@ -164,7 +164,7 @@ export default function PaymentSelection() {
 
           <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
             <span className="text-[14px] text-gray-400">Total</span>
-            <span className="text-[20px] font-bold text-[#1a1a1a]">R$ 49,90</span>
+            <span className="text-[20px] font-bold text-[#1a1a1a]">R$ 1,00</span>
           </div>
         </div>
       </div>

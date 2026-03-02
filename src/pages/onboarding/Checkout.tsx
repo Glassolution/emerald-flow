@@ -28,7 +28,7 @@ const PLANS: Plan[] = [
   {
     id: "monthly",
     name: "Mensal",
-    price: 49.90,
+    price: 1.0,
     originalPrice: 124.90,
     period: "/mês",
     periodLabel: "mensal",

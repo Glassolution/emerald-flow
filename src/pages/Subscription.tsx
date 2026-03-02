@@ -22,7 +22,7 @@ const PLANS = [
   {
     id: "monthly" as PlanId,
     name: "Mensal",
-    price: 49.9,
+    price: 1.0,
     originalPrice: 124.9,
     period: "/mês",
   },

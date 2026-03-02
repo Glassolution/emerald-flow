@@ -5,7 +5,7 @@ type PlanId = "monthly" | "yearly";
 type PaymentMethod = "card" | "pix";
 
 const PLANS: Record<PlanId, { amount: number; label: string; frequency: number }> = {
-  monthly: { amount: 49.9, label: "Mensal", frequency: 1 },
+  monthly: { amount: 1.0, label: "Mensal", frequency: 1 },
   yearly: { amount: 499.9, label: "Anual", frequency: 12 },
 };
 
