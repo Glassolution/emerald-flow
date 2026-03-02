@@ -9,7 +9,7 @@ import { getUserStats, UserStats } from "@/lib/userStats";
 import { getAvatarUrl } from "@/lib/avatarService";
 import { AvatarPicker } from "@/components/profile/AvatarPicker";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabaseClient";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
