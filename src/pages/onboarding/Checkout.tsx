@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabaseClient";
 import iphoneImg from "@/assets/iphone.png";
 import calcIcon from "@/assets/calc.png";
 
@@ -15,13 +14,12 @@ import calcIcon from "@/assets/calc.png";
 type Plan = {
   id: "monthly" | "yearly";
   name: string;
-  price: number; // valor real que será cobrado após o trial
-  originalPrice: number; // valor “sem desconto” usado apenas para exibir o risco
+  price: number;
+  originalPrice: number;
   period: string;
   periodLabel: string;
   saveLabel?: string;
   trialDays: number;
-  link: string;
 };
 
 const PLANS: Plan[] = [
@@ -33,7 +31,6 @@ const PLANS: Plan[] = [
     period: "/mês",
     periodLabel: "mensal",
     trialDays: 7,
-    link: "https://mpago.la/16iceTa"
   },
   {
     id: "yearly",
@@ -44,7 +41,6 @@ const PLANS: Plan[] = [
     periodLabel: "anual",
     saveLabel: "Economize 60%",
     trialDays: 7,
-    link: "https://mpago.la/1T9dTsU"
   }
 ];
 
@@ -53,7 +49,7 @@ export default function Checkout() {
   const { completeOnboarding } = useOnboarding();
   const { toast } = useToast();
   const { refreshUser, user } = useAuth();
-  
+
   // Carousel
   const [emblaRef] = useEmblaCarousel({ loop: true });
   const carouselImages = [iphoneImg, iphoneImg, iphoneImg];
@@ -61,26 +57,23 @@ export default function Checkout() {
   // State for flow control
   const [step, setStep] = useState<"plans" | "payment">("plans");
   const [selectedPlanId, setSelectedPlanId] = useState<"monthly" | "yearly">("yearly");
-  
+
   // State for payment form
-  const [selectedType] = useState<"card">("card");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardName, setCardName] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [saveForFuture, setSaveForFuture] = useState(true);
-  
+
   // Countdown timer logic
   const [timeLeft, setTimeLeft] = useState("23:59:59.00");
-  
+
   useEffect(() => {
     const STORAGE_KEY = "calc_checkout_deadline";
     let deadline = localStorage.getItem(STORAGE_KEY);
 
     if (!deadline) {
-      // First access: set 24 hours from now
       const targetDate = new Date().getTime() + 24 * 60 * 60 * 1000;
       deadline = targetDate.toString();
       localStorage.setItem(STORAGE_KEY, deadline);
@@ -91,7 +84,7 @@ export default function Checkout() {
     const interval = setInterval(() => {
       const now = new Date().getTime();
       const diff = targetTime - now;
-      
+
       if (diff <= 0) {
         setTimeLeft("00:00:00.00");
         return;
@@ -101,12 +94,12 @@ export default function Checkout() {
       const minutes = Math.floor((diff / (1000 * 60)) % 60);
       const seconds = Math.floor((diff / 1000) % 60);
       const milliseconds = Math.floor((diff % 1000) / 10);
-      
+
       setTimeLeft(
         `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`
       );
     }, 50);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -126,7 +119,7 @@ export default function Checkout() {
       }
     }
   };
-  
+
   const formatCardNumber = (value: string) => {
     const numbers = value.replace(/\D/g, "");
     const groups = numbers.match(/.{1,4}/g);
@@ -143,11 +136,13 @@ export default function Checkout() {
 
   const handleContinueToPayment = async () => {
     if (isSubmitting) return;
+
     const digits = cardNumber.replace(/\s/g, "");
     const numOk = digits.length >= 13;
     const expOk = cardExpiry.length === 5;
     const nameOk = cardName.trim().length > 2;
     const cvvOk = cardCvv.length === 3;
+
     if (!numOk || !expOk || !nameOk || !cvvOk) {
       toast({
         title: "Dados do cartão inválidos",
@@ -156,93 +151,62 @@ export default function Checkout() {
       });
       return;
     }
-    if (!supabase) {
+
+    if (!user?.email) {
       toast({
-        title: "Serviço indisponível",
-        description: "Tente novamente em alguns instantes.",
+        title: "Sessão expirada",
+        description: "Faça login novamente para iniciar seu teste.",
         variant: "destructive",
       });
       return;
     }
+
     setIsSubmitting(true);
     try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-      if (sessionError || !accessToken) {
-        toast({
-          title: "Sessão expirada",
-          description: "Faça login novamente para iniciar seu teste.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-      if (!supabaseUrl) {
-        toast({
-          title: "Configuração inválida",
-          description: "Supabase não configurado corretamente.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const functionsBaseUrl = supabaseUrl.replace(".supabase.co", ".functions.supabase.co");
-      const endpoint = `${functionsBaseUrl}/mercadopago-subscription`;
-      const response = await fetch(endpoint, {
+      const res = await fetch("/api/create-checkout", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cardNumber,
+          email: user.email,
+          planId: selectedPlanId,
+          paymentMethod: "card",
+          cardNumber: cardNumber.replace(/\s/g, ""),
           cardExpiry,
           cardCvv,
           cardHolderName: cardName,
-          planAmount: selectedPlan.price,
-          currencyId: "BRL",
-          trialDays: selectedPlan.trialDays,
         }),
       });
-      const data = await response.json();
-      if (!response.ok || !data.ok) {
-        toast({
-          title: "Não foi possível iniciar o teste",
-          description: "Verifique os dados do cartão ou tente novamente.",
-          variant: "destructive",
-        });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        const msg =
+          data.detail ??
+          (data.error === "invalid_card"
+            ? "Cartão recusado. Verifique os dados ou use outro cartão."
+            : data.error === "payment_failed"
+            ? "Pagamento recusado pelo banco. Tente outro cartão."
+            : "Erro ao processar pagamento. Tente novamente.");
+        toast({ title: "Pagamento não aprovado", description: msg, variant: "destructive" });
         return;
       }
+
       toast({
-        title: "Teste gratuito iniciado",
-        description: `Você terá ${selectedPlan.trialDays} dias grátis. Cobrança prevista para ${trialEndDate}.`,
+        title: "Assinatura ativada!",
+        description: `Você tem ${selectedPlan.trialDays} dias grátis. Bem-vindo ao CALC Pro!`,
       });
       await refreshUser();
       completeOnboarding();
       navigate('/app/home', { replace: true });
     } catch (error) {
-      console.error("Erro ao iniciar trial:", error);
+      console.error("Erro ao processar pagamento:", error);
       toast({
-        title: "Erro ao iniciar teste",
-        description: "Ocorreu um erro ao processar seu teste grátis.",
+        title: "Erro de conexão",
+        description: "Verifique sua internet e tente novamente.",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handlePayment = () => {
-    const selectedPlan = PLANS.find(p => p.id === selectedPlanId);
-    if (!selectedPlan) return;
-
-    if (user?.id) {
-      // Adiciona o ID do usuário como referência externa e o e-mail como preenchimento (se suportado)
-      const separator = selectedPlan.link.includes('?') ? '&' : '?';
-      const checkoutUrl = `${selectedPlan.link}${separator}external_reference=${user.id}&payer_email=${user.email}`;
-      window.location.href = checkoutUrl;
-    } else {
-      // Fallback caso não tenha usuário logado (não deveria acontecer aqui)
-      window.location.href = selectedPlan.link;
     }
   };
 
@@ -265,22 +229,21 @@ export default function Checkout() {
                   alt={`Slide ${index + 1}`}
                   className="h-[90%] w-auto object-contain z-10"
                 />
-                {/* Dark gradient overlay on image */}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 pointer-events-none z-20" />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Content Section - Static & Compact */}
+        {/* Content Section */}
         <div className="flex-1 w-full bg-white rounded-t-[32px] shadow-[0_-8px_24px_rgba(0,0,0,0.08)] -mt-8 relative z-30 px-6 pt-6 pb-6 flex flex-col justify-between">
           <div className="text-center mb-4">
             <h1 className="text-[18px] font-bold text-[#1a1a1a] mb-2">Acesso ilimitado</h1>
             <div className="relative inline-block">
-              <img 
-                src={calcIcon} 
-                alt="Calc" 
-                className="absolute right-[calc(100%+6px)] top-1/2 -translate-y-1/2 w-8 h-8 object-contain" 
+              <img
+                src={calcIcon}
+                alt="Calc"
+                className="absolute right-[calc(100%+6px)] top-1/2 -translate-y-1/2 w-8 h-8 object-contain"
               />
               <span className="text-[28px] font-[900] text-[#1a1a1a] uppercase tracking-tighter leading-none">
                 CALC
@@ -304,17 +267,13 @@ export default function Checkout() {
                     {plan.saveLabel}
                   </div>
                 )}
-
                 <span className="text-[13px] font-bold text-[#1a1a1a] mb-0.5">{plan.name}</span>
-
                 <div className="flex flex-col items-center">
                   <span className="text-[10px] text-gray-400 line-through leading-tight">
-                    R$ {plan.originalPrice.toFixed(2).replace(".", ",")}
-                    {plan.period}
+                    R$ {plan.originalPrice.toFixed(2).replace(".", ",")}{plan.period}
                   </span>
                   <span className="text-[13px] font-bold text-[#1a1a1a] leading-tight">
-                    R$ {plan.price.toFixed(2).replace(".", ",")}
-                    {plan.period}
+                    R$ {plan.price.toFixed(2).replace(".", ",")}{plan.period}
                   </span>
                 </div>
               </button>
@@ -328,7 +287,7 @@ export default function Checkout() {
           </div>
 
           <button
-            onClick={handlePayment}
+            onClick={() => setStep("payment")}
             className="w-full py-3.5 px-6 text-[15px] font-bold rounded-[24px] transition-all duration-300 active:scale-[0.98] bg-[#A3FF3F] text-black hover:bg-[#93F039] shadow-lg shadow-[#A3FF3F]/40"
           >
             Obter plano {selectedPlan.name} com 60% de desconto
@@ -354,70 +313,72 @@ export default function Checkout() {
         <button onClick={handleBackClick} className="p-2 -ml-2 text-gray-900">
           <ChevronLeft size={24} />
         </button>
-        <h1 className="text-[18px] font-bold text-gray-900">Pagamento</h1>
+        <h1 className="text-[18px] font-bold text-gray-900">
+          Plano {selectedPlan.name} — R$ {selectedPlan.price.toFixed(2).replace(".", ",")}{selectedPlan.period}
+        </h1>
         <div className="w-10" />
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-6">
         <section className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[16px] font-bold text-gray-900">Pagamento</h2>
+            <h2 className="text-[16px] font-bold text-gray-900">Dados do cartão</h2>
             <div className="flex items-center gap-2 text-[12px] text-gray-500">
               <CreditCard size={16} className="text-gray-700" />
-              <span>Cartão de crédito obrigatório</span>
+              <span>Cartão de crédito</span>
             </div>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="text-[13px] font-semibold text-gray-500 mb-2 block">Número do cartão</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                  placeholder="2048 0348 3409 0348"
-                  maxLength={19}
-                  className="w-full p-4 bg-gray-50 rounded-xl text-[16px] border-2 border-transparent focus:border-indigo-600 focus:outline-none transition-colors pr-12"
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-red-500" />
-              </div>
+              <input
+                type="text"
+                value={cardNumber}
+                onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                placeholder="0000 0000 0000 0000"
+                maxLength={19}
+                inputMode="numeric"
+                className="w-full p-4 bg-gray-50 rounded-xl text-[16px] border-2 border-transparent focus:border-black focus:outline-none transition-colors"
+              />
             </div>
             <div>
               <label className="text-[13px] font-semibold text-gray-500 mb-2 block">Nome do titular</label>
               <input
                 type="text"
                 value={cardName}
-                onChange={(e) => setCardName(e.target.value)}
-                placeholder="Kelly Aniston Jade"
-                className="w-full p-4 bg-gray-50 rounded-xl text-[16px] border-2 border-transparent focus:border-indigo-600 focus:outline-none transition-colors"
+                onChange={(e) => setCardName(e.target.value.toUpperCase())}
+                placeholder="NOME COMO NO CARTÃO"
+                className="w-full p-4 bg-gray-50 rounded-xl text-[16px] border-2 border-transparent focus:border-black focus:outline-none transition-colors"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[13px] font-semibold text-gray-500 mb-2 block">Expira em</label>
+                <label className="text-[13px] font-semibold text-gray-500 mb-2 block">Validade</label>
                 <div className="relative">
                   <input
                     type="text"
                     value={cardExpiry}
                     onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                    placeholder="09/30"
+                    placeholder="MM/AA"
                     maxLength={5}
-                    className="w-full p-4 bg-gray-50 rounded-xl text-[16px] border-2 border-transparent focus:border-indigo-600 focus:outline-none transition-colors pr-12"
+                    inputMode="numeric"
+                    className="w-full p-4 bg-gray-50 rounded-xl text-[16px] border-2 border-transparent focus:border-black focus:outline-none transition-colors pr-12"
                   />
                   <Calendar size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-gray-500 mb-2 block">CVV de 3 dígitos</label>
+                <label className="text-[13px] font-semibold text-gray-500 mb-2 block">CVV</label>
                 <div className="relative">
                   <input
                     type="text"
                     value={cardCvv}
-                    onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0,3))}
-                    placeholder="942"
+                    onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                    placeholder="000"
                     maxLength={3}
-                    className="w-full p-4 bg-gray-50 rounded-xl text-[16px] border-2 border-transparent focus:border-indigo-600 focus:outline-none transition-colors pr-12"
+                    inputMode="numeric"
+                    className="w-full p-4 bg-gray-50 rounded-xl text-[16px] border-2 border-transparent focus:border-black focus:outline-none transition-colors pr-12"
                   />
                   <Lock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
@@ -428,17 +389,9 @@ export default function Checkout() {
                 type="checkbox"
                 checked={saveForFuture}
                 onChange={(e) => setSaveForFuture(e.target.checked)}
-                className="w-4 h-4 text-indigo-600 border-gray-300 rounded"
+                className="w-4 h-4 text-black border-gray-300 rounded"
               />
               <span className="text-[13px] font-semibold text-gray-600">Salvar cartão para o futuro</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="py-2 rounded-lg text-[14px] font-semibold bg-indigo-50 text-indigo-700 text-center">
-                Crédito
-              </div>
-              <div className="py-2 rounded-lg text-[14px] font-semibold bg-gray-100 text-gray-400 text-center">
-                Pix indisponível para o teste grátis
-              </div>
             </div>
           </div>
         </section>
@@ -447,7 +400,7 @@ export default function Checkout() {
           <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl">
             <Clock size={20} className="text-[#22c55e] flex-shrink-0" />
             <p className="text-[13px] text-gray-700">
-              Você selecionou o plano <strong>{selectedPlan.name}</strong> com {selectedPlan.trialDays} dias grátis. 
+              Você selecionou o plano <strong>{selectedPlan.name}</strong> com {selectedPlan.trialDays} dias grátis.
               Após o trial, será cobrado R$ {selectedPlan.price.toFixed(2).replace(".", ",")}{selectedPlan.period}.
             </p>
           </div>
@@ -458,38 +411,26 @@ export default function Checkout() {
             </p>
           </div>
         </div>
+
+        <p className="text-[11px] text-gray-400 text-center mb-2">
+          🔒 Pagamento processado com segurança pelo Mercado Pago
+        </p>
       </div>
 
       {/* Botão Continuar */}
       <div className="px-6 pb-10 pt-4 bg-white border-t border-gray-100">
         <button
           onClick={handleContinueToPayment}
-          disabled={
-            !cardNumber || !cardExpiry || !cardName || cardCvv.length < 3 || isSubmitting
-          }
-          className={`w-full py-5 px-8 text-white text-[18px] font-bold rounded-[20px] transition-all duration-300 ${
+          disabled={!cardNumber || !cardExpiry || !cardName || cardCvv.length < 3 || isSubmitting}
+          className={`w-full py-4 text-[16px] font-bold rounded-[24px] transition-all duration-300 active:scale-[0.98] ${
             cardNumber && cardExpiry && cardName && cardCvv.length === 3 && !isSubmitting
-              ? 'bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] shadow-xl'
-              : 'bg-gray-300 cursor-not-allowed'
+              ? "bg-[#A3FF3F] text-black hover:bg-[#93F039] shadow-lg shadow-[#A3FF3F]/40"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
         >
-          Iniciar 7 dias grátis
+          {isSubmitting ? "Processando..." : `Assinar plano ${selectedPlan.name} · 7 dias grátis`}
         </button>
       </div>
-
-      <style>{`
-        @keyframes slide-up {
-          from {
-            transform: translateY(100%);
-          }
-          to {
-            transform: translateY(0);
-          }
-        }
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out;
-        }
-      `}</style>
     </div>
   );
 }
