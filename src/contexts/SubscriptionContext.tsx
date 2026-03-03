@@ -7,6 +7,7 @@ interface SubscriptionContextType {
   hasPaid: boolean;
   startTrial: () => void;
   checkTrialStatus: () => void;
+  refreshSubscription: () => Promise<void>;
   daysRemaining: number;
 }
 
@@ -25,10 +26,10 @@ interface SubscriptionProviderProps {
 }
 
 export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [trialStartDate, setTrialStartDate] = useState<string | null>(null);
   const [isTrialExpired, setIsTrialExpired] = useState(false);
-  const [hasPaid, setHasPaid] = useState(false); // Futuro: integrar com backend/pagamento real
+  const [hasPaid, setHasPaid] = useState(false);
   const [daysRemaining, setDaysRemaining] = useState(7);
 
   const TRIAL_DURATION_DAYS = 7;
@@ -37,16 +38,15 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     if (user) {
       checkTrialStatus();
     } else {
-        // Reset state if no user
-        setTrialStartDate(null);
-        setIsTrialExpired(false);
-        setHasPaid(false);
+      setTrialStartDate(null);
+      setIsTrialExpired(false);
+      setHasPaid(false);
     }
   }, [user]);
 
   const startTrial = () => {
     if (!user) return;
-    
+
     const storageKey = `trial_start_${user.id}`;
     const existingStart = localStorage.getItem(storageKey);
 
@@ -63,38 +63,57 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     const storageKey = `trial_start_${user.id}`;
     const storedStart = localStorage.getItem(storageKey);
-    
-    // Check payment status (simulated for now, could be in localStorage too)
     const paymentKey = `has_paid_${user.id}`;
-    const storedPayment = localStorage.getItem(paymentKey);
-    if (storedPayment === 'true') {
-        setHasPaid(true);
-        setIsTrialExpired(false); // Paid users never expire
-        return;
+
+    // 1. Subscription cancelada (estorno) — limpa cache local e bloqueia acesso
+    const metaStatus = user.user_metadata?.subscription_status as string | undefined;
+    if (metaStatus === "cancelled") {
+      localStorage.removeItem(paymentKey);
+      setHasPaid(false);
+      setIsTrialExpired(true);
+      return;
     }
 
+    // 2. Assinatura ativa via user_metadata (atualizado pela API/webhook)
+    if (metaStatus === "trial_active" || metaStatus === "subscription_active") {
+      setHasPaid(true);
+      setIsTrialExpired(false);
+      localStorage.setItem(paymentKey, "true");
+      return;
+    }
+
+    // 3. Verifica localStorage (compatibilidade com fluxo anterior)
+    const storedPayment = localStorage.getItem(paymentKey);
+    if (storedPayment === "true") {
+      setHasPaid(true);
+      setIsTrialExpired(false);
+      return;
+    }
+
+    // 4. Verifica trial por tempo
     if (storedStart) {
       setTrialStartDate(storedStart);
-      
+
       const startDate = new Date(storedStart);
       const now = new Date();
-      const diffTime = Math.abs(now.getTime() - startDate.getTime());
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      
+      const diffDays =
+        Math.abs(now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+
       const remaining = Math.max(0, TRIAL_DURATION_DAYS - diffDays);
       setDaysRemaining(remaining);
-
-      if (diffDays >= TRIAL_DURATION_DAYS) {
-        setIsTrialExpired(true);
-      } else {
-        setIsTrialExpired(false);
-      }
+      setIsTrialExpired(diffDays >= TRIAL_DURATION_DAYS);
     } else {
-        // Trial hasn't started yet
-        setTrialStartDate(null);
-        setIsTrialExpired(false);
-        setDaysRemaining(TRIAL_DURATION_DAYS);
+      setTrialStartDate(null);
+      setIsTrialExpired(false);
+      setDaysRemaining(TRIAL_DURATION_DAYS);
     }
+  };
+
+  // Força atualização do user_metadata do Supabase e re-checa assinatura.
+  // Chamar após um estorno para refletir o cancelamento no frontend sem F5.
+  const refreshSubscription = async () => {
+    await refreshUser();
+    // checkTrialStatus é chamado automaticamente pelo useEffect quando `user` muda.
   };
 
   return (
@@ -105,7 +124,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         hasPaid,
         startTrial,
         checkTrialStatus,
-        daysRemaining
+        refreshSubscription,
+        daysRemaining,
       }}
     >
       {children}
