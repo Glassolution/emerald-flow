@@ -1,22 +1,25 @@
-import { useEffect } from "react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useSubscription } from "@/contexts/SubscriptionContext";
+import { useEffect } from 'react'
+import { Outlet, useNavigate } from 'react-router-dom'
+import { useSubscription } from '@/contexts/SubscriptionContext'
+import { useAuth } from '@/contexts/AuthContext'
 
 export function SubscriptionGuard() {
-  const { isTrialExpired, hasPaid, startTrial } = useSubscription();
-  const location = useLocation();
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { isTrialActive, isPro } = useSubscription()
 
   useEffect(() => {
-    // Start trial automatically when accessing protected routes
-    startTrial();
-  }, [startTrial]);
+    if (!user) return
 
-  if (isTrialExpired && !hasPaid) {
-    // Prevent infinite redirect if already on subscription page
-    if (location.pathname !== "/subscription") {
-      return <Navigate to="/subscription" replace />;
+    const meta = user.user_metadata ?? {}
+    const status = meta.subscription_status
+
+    // Apenas bloqueia quem nunca pagou e trial expirou.
+    // Cancelados (isFree + isCancelled) passam livremente como plano Free.
+    if (!isPro && !isTrialActive && status !== 'cancelled') {
+      navigate('/subscription')
     }
-  }
+  }, [user, isPro, isTrialActive, navigate])
 
-  return <Outlet />;
+  return <Outlet />
 }

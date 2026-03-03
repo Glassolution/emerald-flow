@@ -1,114 +1,109 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { useAuth } from "./AuthContext";
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { useAuth } from './AuthContext'
+
+type Plan = 'pro' | 'free'
 
 interface SubscriptionContextType {
-  trialStartDate: string | null;
-  isTrialExpired: boolean;
-  hasPaid: boolean;
-  startTrial: () => void;
-  checkTrialStatus: () => void;
-  daysRemaining: number;
+  plan: Plan
+  isPro: boolean
+  isFree: boolean
+  isCancelled: boolean
+  isTrialActive: boolean
+  canCalculate: () => boolean
+  registerCalculation: () => void
+  calculationsUsedToday: number
+  FREE_DAILY_LIMIT: number
+  refreshSubscription: () => Promise<void>
 }
 
-const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
+const SubscriptionContext = createContext<SubscriptionContextType | null>(null)
 
-export const useSubscription = () => {
-  const context = useContext(SubscriptionContext);
-  if (!context) {
-    throw new Error("useSubscription must be used within a SubscriptionProvider");
-  }
-  return context;
-};
+const FREE_DAILY_LIMIT = 1
 
-interface SubscriptionProviderProps {
-  children: ReactNode;
+function getTodayKey(userId: string) {
+  const today = new Date().toISOString().split('T')[0]
+  return `calc_count_${userId}_${today}`
 }
 
-export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
-  const { user } = useAuth();
-  const [trialStartDate, setTrialStartDate] = useState<string | null>(null);
-  const [isTrialExpired, setIsTrialExpired] = useState(false);
-  const [hasPaid, setHasPaid] = useState(false); // Futuro: integrar com backend/pagamento real
-  const [daysRemaining, setDaysRemaining] = useState(7);
+export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
+  const { user, refreshUser } = useAuth()
+  const [plan, setPlan] = useState<Plan>('free')
+  const [isCancelled, setIsCancelled] = useState(false)
+  const [isTrialActive, setIsTrialActive] = useState(false)
+  const [calculationsUsedToday, setCalculationsUsedToday] = useState(0)
 
-  const TRIAL_DURATION_DAYS = 7;
+  const resolveSubscription = useCallback(() => {
+    if (!user) return
+
+    const meta = user.user_metadata ?? {}
+    const status = meta.subscription_status
+    const premium = meta.premium === true
+    const trial = meta.trial_active === true
+
+    setIsTrialActive(trial)
+
+    if (status === 'cancelled') {
+      // FREEMIUM: cancelado vira free, NÃO bloqueia
+      setPlan('free')
+      setIsCancelled(true)
+    } else if (premium || status === 'subscription_active') {
+      setPlan('pro')
+      setIsCancelled(false)
+    } else {
+      setPlan('free')
+      setIsCancelled(false)
+    }
+
+    // Carrega contagem de cálculos do dia
+    const key = getTodayKey(user.id)
+    const stored = parseInt(localStorage.getItem(key) ?? '0', 10)
+    setCalculationsUsedToday(stored)
+  }, [user])
 
   useEffect(() => {
-    if (user) {
-      checkTrialStatus();
-    } else {
-        // Reset state if no user
-        setTrialStartDate(null);
-        setIsTrialExpired(false);
-        setHasPaid(false);
-    }
-  }, [user]);
+    resolveSubscription()
+  }, [resolveSubscription])
 
-  const startTrial = () => {
-    if (!user) return;
-    
-    const storageKey = `trial_start_${user.id}`;
-    const existingStart = localStorage.getItem(storageKey);
+  const refreshSubscription = useCallback(async () => {
+    await refreshUser()
+    resolveSubscription()
+  }, [refreshUser, resolveSubscription])
 
-    if (!existingStart) {
-      const now = new Date().toISOString();
-      localStorage.setItem(storageKey, now);
-      setTrialStartDate(now);
-      checkTrialStatus();
-    }
-  };
+  const canCalculate = useCallback(() => {
+    if (plan === 'pro') return true
+    return calculationsUsedToday < FREE_DAILY_LIMIT
+  }, [plan, calculationsUsedToday])
 
-  const checkTrialStatus = () => {
-    if (!user) return;
+  const registerCalculation = useCallback(() => {
+    if (plan === 'pro') return
+    if (!user) return
 
-    const storageKey = `trial_start_${user.id}`;
-    const storedStart = localStorage.getItem(storageKey);
-    
-    // Check payment status (simulated for now, could be in localStorage too)
-    const paymentKey = `has_paid_${user.id}`;
-    const storedPayment = localStorage.getItem(paymentKey);
-    if (storedPayment === 'true') {
-        setHasPaid(true);
-        setIsTrialExpired(false); // Paid users never expire
-        return;
-    }
-
-    if (storedStart) {
-      setTrialStartDate(storedStart);
-      
-      const startDate = new Date(storedStart);
-      const now = new Date();
-      const diffTime = Math.abs(now.getTime() - startDate.getTime());
-      const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      
-      const remaining = Math.max(0, TRIAL_DURATION_DAYS - diffDays);
-      setDaysRemaining(remaining);
-
-      if (diffDays >= TRIAL_DURATION_DAYS) {
-        setIsTrialExpired(true);
-      } else {
-        setIsTrialExpired(false);
-      }
-    } else {
-        // Trial hasn't started yet
-        setTrialStartDate(null);
-        setIsTrialExpired(false);
-        setDaysRemaining(TRIAL_DURATION_DAYS);
-    }
-  };
+    const key = getTodayKey(user.id)
+    const newCount = calculationsUsedToday + 1
+    localStorage.setItem(key, String(newCount))
+    setCalculationsUsedToday(newCount)
+  }, [plan, user, calculationsUsedToday])
 
   return (
-    <SubscriptionContext.Provider
-      value={{
-        trialStartDate,
-        isTrialExpired,
-        hasPaid,
-        startTrial,
-        checkTrialStatus,
-        daysRemaining
-      }}
-    >
+    <SubscriptionContext.Provider value={{
+      plan,
+      isPro: plan === 'pro',
+      isFree: plan === 'free',
+      isCancelled,
+      isTrialActive,
+      canCalculate,
+      registerCalculation,
+      calculationsUsedToday,
+      FREE_DAILY_LIMIT,
+      refreshSubscription,
+    }}>
       {children}
     </SubscriptionContext.Provider>
-  );
+  )
+}
+
+export function useSubscription() {
+  const ctx = useContext(SubscriptionContext)
+  if (!ctx) throw new Error('useSubscription must be used inside SubscriptionProvider')
+  return ctx
 }

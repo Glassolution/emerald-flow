@@ -22,15 +22,15 @@ const PLANS = [
   {
     id: "monthly" as PlanId,
     name: "Mensal",
-    price: 1.0,
+    price: 29.9,
     originalPrice: 124.9,
     period: "/mês",
   },
   {
     id: "yearly" as PlanId,
     name: "Anual",
-    price: 499.9,
-    originalPrice: 1249.9,
+    price: 299.9,
+    originalPrice: 749.9,
     period: "/ano",
     saveLabel: "Economize 60%",
   },
@@ -46,9 +46,9 @@ interface PixData {
 
 // ─── Componente de gerenciamento de assinatura ───────────────────────────────
 
-function ManageSubscription() {
+function ManageSubscription({ onReactivate }: { onReactivate: () => void }) {
   const { user, refreshUser } = useAuth();
-  const { checkTrialStatus } = useSubscription();
+  const { isCancelled: subIsCancelled, plan: subPlan, refreshSubscription } = useSubscription();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isRefunding, setIsRefunding] = useState(false);
@@ -98,8 +98,7 @@ function ManageSubscription() {
         return;
       }
 
-      await refreshUser();
-      checkTrialStatus();
+      await refreshSubscription();
       toast({ title: "Estorno solicitado", description: data.message });
       navigate("/app/home", { replace: true });
     } catch (err: unknown) {
@@ -135,8 +134,7 @@ function ManageSubscription() {
         return;
       }
 
-      await refreshUser();
-      checkTrialStatus();
+      await refreshSubscription();
       toast({ title: "Plano cancelado", description: data.message });
     } catch (err: unknown) {
       toast({
@@ -160,16 +158,16 @@ function ManageSubscription() {
           <span className="text-[13px] font-semibold text-gray-500">Plano atual</span>
           <span
             className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-              isCancelled
-                ? "bg-red-100 text-red-600"
-                : "bg-green-100 text-green-700"
+              subPlan === 'pro'
+                ? "bg-green-100 text-green-700"
+                : "bg-gray-100 text-gray-600"
             }`}
           >
-            {isCancelled ? "Cancelado" : "Ativo"}
+            {subPlan === 'pro' ? "Ativo" : "Free"}
           </span>
         </div>
         <p className="text-[20px] font-black text-[#1a1a1a]">
-          CALC Pro — {planLabel}
+          {subIsCancelled ? "CALC Free" : `CALC Pro — ${planLabel}`}
         </p>
         {planAmount && (
           <p className="text-[14px] text-gray-500 mt-0.5">
@@ -183,6 +181,29 @@ function ManageSubscription() {
           </p>
         )}
       </div>
+
+      {/* Card Free — visível quando assinatura foi cancelada */}
+      {subIsCancelled && (
+        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4 space-y-3">
+          <p className="text-[14px] text-gray-600 leading-relaxed">
+            Sua assinatura foi cancelada. Você continua com acesso ao plano{" "}
+            <span className="font-semibold text-gray-800">Free</span> com{" "}
+            <span className="font-semibold">1 cálculo por dia</span>.
+          </p>
+          <button
+            onClick={onReactivate}
+            className="w-full py-3 text-[14px] font-bold rounded-xl bg-[#1a1a1a] text-white active:scale-95 transition-all"
+          >
+            Reativar plano Pro →
+          </button>
+          <button
+            onClick={() => navigate('/app/home')}
+            className="w-full py-2.5 text-[14px] font-semibold rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+          >
+            Continuar no Free
+          </button>
+        </div>
+      )}
 
       {/* Estorno — visível dentro dos 7 dias */}
       {canRefund && (
@@ -284,7 +305,7 @@ function ManageSubscription() {
 // ─── Subscription principal ───────────────────────────────────────────────────
 
 export default function Subscription() {
-  const { isTrialExpired, checkTrialStatus } = useSubscription();
+  const { isFree, refreshSubscription } = useSubscription();
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
@@ -293,6 +314,7 @@ export default function Subscription() {
   const carouselImages = [iphoneImg, iphoneImg, iphoneImg];
 
   const [step, setStep] = useState<Step>("plans");
+  const [showCheckout, setShowCheckout] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<PlanId>("yearly");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [timeLeft, setTimeLeft] = useState("23:59:59.00");
@@ -405,8 +427,7 @@ export default function Subscription() {
           localStorage.removeItem("calc_pending_pix");
           if (user) {
             localStorage.setItem(`has_paid_${user.id}`, "true");
-            await refreshUser();
-            checkTrialStatus();
+            await refreshSubscription();
             toast({ title: "PIX confirmado!", description: "Bem-vindo ao CALC Pro." });
             navigate("/app/home", { replace: true });
           } else {
@@ -429,7 +450,7 @@ export default function Subscription() {
   const selectedPlan = PLANS.find((p) => p.id === selectedPlanId) ?? PLANS[1];
 
   const handleClose = () => {
-    if (!isTrialExpired) navigate(-1);
+    navigate(-1);
   };
 
   const formatCardNumber = (value: string) => {
@@ -530,8 +551,7 @@ export default function Subscription() {
       } else {
         if (user) {
           localStorage.setItem(`has_paid_${user.id}`, "true");
-          await refreshUser();
-          checkTrialStatus();
+          await refreshSubscription();
           toast({ title: "Assinatura ativa!", description: "Bem-vindo ao CALC Pro." });
           navigate("/app/home", { replace: true });
         } else {
@@ -553,11 +573,12 @@ export default function Subscription() {
   // ─── Gerenciamento de assinatura (usuário já assinou) ────────────────────
   const subStatus = user?.user_metadata?.subscription_status as string | undefined;
   if (
-    subStatus === "trial_active" ||
-    subStatus === "subscription_active" ||
-    subStatus === "cancelled"
+    !showCheckout &&
+    (subStatus === "trial_active" ||
+      subStatus === "subscription_active" ||
+      subStatus === "cancelled")
   ) {
-    return <ManageSubscription />;
+    return <ManageSubscription onReactivate={() => setShowCheckout(true)} />;
   }
 
   // ─── Tela de sucesso ──────────────────────────────────────────────────────
@@ -691,11 +712,9 @@ export default function Subscription() {
               {paymentMethod === "card" ? "7 dias grátis · cancele quando quiser" : "Pagamento único via PIX"}
             </p>
           </div>
-          {!isTrialExpired && (
-            <button onClick={handleClose} className="p-2 text-gray-400">
-              <X size={20} />
-            </button>
-          )}
+          <button onClick={handleClose} className="p-2 text-gray-400">
+            <X size={20} />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
@@ -716,11 +735,11 @@ export default function Subscription() {
               }`}
             >
               <span className="inline-flex items-center gap-1.5">
-                <svg width="16" height="16" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                  <path fill="#32BCAD" d="M313.9 190.4l-59.5-59.5c-7.8-7.8-20.5-7.8-28.3 0l-59.5 59.5c-7.3 7.3-17.1 11.3-27.4 11.3H96.7l97.4-97.4c16.7-16.7 39-26 62.4-26 23.4 0 45.7 9.2 62.4 26l97.4 97.4h-42.6c-10.3 0-20.2-4.1-27.4-11.3z"/>
-                  <path fill="#32BCAD" d="M198.1 321.6l59.5 59.5c7.8 7.8 20.5 7.8 28.3 0l59.5-59.5c7.3-7.3 17.1-11.3 27.4-11.3h42.6l-97.4 97.4c-16.7 16.7-39 26-62.4 26-23.4 0-45.7-9.2-62.4-26l-97.4-97.4h42.6c10.3 0 20.1 4.1 27.4 11.3z"/>
-                  <path fill="#32BCAD" d="M430.5 204.2l-19.3 19.3c-14.7 14.7-14.7 38.5 0 53.2l19.3 19.3-19.3 19.3c-14.7 14.7-38.5 14.7-53.2 0l-19.3-19.3 19.3-19.3c14.7-14.7 14.7-38.5 0-53.2l-19.3-19.3 19.3-19.3c14.7-14.7 38.5-14.7 53.2 0z"/>
-                  <path fill="#32BCAD" d="M81.5 307.8l19.3-19.3c14.7-14.7 14.7-38.5 0-53.2L81.5 216l19.3-19.3c14.7-14.7 38.5-14.7 53.2 0l19.3 19.3-19.3 19.3c-14.7 14.7-14.7 38.5 0 53.2l19.3 19.3-19.3 19.3c-14.7 14.7-38.5 14.7-53.2 0z"/>
+                <svg width="18" height="18" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M313.795 191.958L258.099 136.262C257.044 135.207 255.648 134.615 254.193 134.615C252.738 134.615 251.342 135.207 250.287 136.262L194.591 191.958C185.316 201.233 172.897 206.45 159.924 206.45H128.997L253.3 82.148C262.575 72.872 274.994 67.655 288.07 67.655C301.146 67.655 313.565 72.872 322.84 82.148L447.143 206.45H416.26C403.287 206.45 390.913 201.233 381.638 191.958Z" fill="#32BCAD"/>
+                  <path d="M194.591 320.042L250.287 375.738C251.342 376.793 252.738 377.385 254.193 377.385C255.648 377.385 257.044 376.793 258.099 375.738L313.795 320.042C323.07 310.767 335.444 305.55 348.462 305.55H379.389L255.086 429.852C245.811 439.128 233.392 444.345 220.316 444.345C207.24 444.345 194.821 439.128 185.546 429.852L61.244 305.55H92.126C105.099 305.55 117.473 310.767 126.748 320.042Z" fill="#32BCAD"/>
+                  <path d="M430.54 204.23L411.317 223.453C401.046 233.724 401.046 250.276 411.317 260.547L430.54 279.77L449.763 260.547C460.034 250.276 460.034 233.724 449.763 223.453L430.54 204.23Z" fill="#32BCAD"/>
+                  <path d="M81.46 279.77L100.683 260.547C110.954 250.276 110.954 233.724 100.683 223.453L81.46 204.23L62.237 223.453C51.966 233.724 51.966 250.276 62.237 260.547L81.46 279.77Z" fill="#32BCAD"/>
                 </svg>
                 PIX
               </span>
@@ -848,13 +867,11 @@ export default function Subscription() {
   // ─── Step 1: Seleção de plano ─────────────────────────────────────────────
   return (
     <div className="h-[100svh] bg-[#f3f4f6] flex flex-col overflow-hidden relative">
-      {!isTrialExpired && (
-        <div className="absolute top-6 right-6 z-50">
-          <button onClick={handleClose} className="p-2 text-gray-500 bg-white/50 backdrop-blur-sm rounded-full">
-            <X size={20} />
-          </button>
-        </div>
-      )}
+      <div className="absolute top-6 right-6 z-50">
+        <button onClick={handleClose} className="p-2 text-gray-500 bg-white/50 backdrop-blur-sm rounded-full">
+          <X size={20} />
+        </button>
+      </div>
 
       <div className="h-[55%] w-full relative" ref={emblaRef}>
         <div className="flex h-full">
