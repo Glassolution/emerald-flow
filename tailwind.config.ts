@@ -111,6 +111,14 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.7" },
         },
+        "sheet-up": {
+          from: { transform: "translateY(100%)" },
+          to: { transform: "translateY(0)" },
+        },
+        "backdrop-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -119,6 +127,8 @@ export default {
         "fade-up": "fade-up 0.5s ease-out",
         "slide-in": "slide-in 0.3s ease-out",
         "pulse-soft": "pulse-soft 2s ease-in-out infinite",
+        "sheet-up": "sheet-up 0.38s cubic-bezier(0.32, 0.72, 0, 1)",
+        "backdrop-in": "backdrop-in 0.25s ease-out",
       },
       transitionDuration: {
         fast: "150ms",
