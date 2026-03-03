@@ -46,7 +46,7 @@ interface PixData {
 
 // ─── Componente de gerenciamento de assinatura ───────────────────────────────
 
-function ManageSubscription() {
+function ManageSubscription({ onReactivate }: { onReactivate: () => void }) {
   const { user, refreshUser } = useAuth();
   const { isCancelled: subIsCancelled, plan: subPlan, refreshSubscription } = useSubscription();
   const { toast } = useToast();
@@ -184,17 +184,23 @@ function ManageSubscription() {
 
       {/* Card Free — visível quando assinatura foi cancelada */}
       {subIsCancelled && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4 space-y-3">
           <p className="text-[14px] text-gray-600 leading-relaxed">
             Sua assinatura foi cancelada. Você continua com acesso ao plano{" "}
             <span className="font-semibold text-gray-800">Free</span> com{" "}
             <span className="font-semibold">1 cálculo por dia</span>.
           </p>
           <button
-            onClick={() => navigate('/subscription')}
-            className="mt-3 text-[14px] font-semibold text-blue-600 hover:underline"
+            onClick={onReactivate}
+            className="w-full py-3 text-[14px] font-bold rounded-xl bg-[#1a1a1a] text-white active:scale-95 transition-all"
           >
             Reativar plano Pro →
+          </button>
+          <button
+            onClick={() => navigate('/app/home')}
+            className="w-full py-2.5 text-[14px] font-semibold rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+          >
+            Continuar no Free
           </button>
         </div>
       )}
@@ -308,6 +314,7 @@ export default function Subscription() {
   const carouselImages = [iphoneImg, iphoneImg, iphoneImg];
 
   const [step, setStep] = useState<Step>("plans");
+  const [showCheckout, setShowCheckout] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<PlanId>("yearly");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [timeLeft, setTimeLeft] = useState("23:59:59.00");
@@ -566,11 +573,12 @@ export default function Subscription() {
   // ─── Gerenciamento de assinatura (usuário já assinou) ────────────────────
   const subStatus = user?.user_metadata?.subscription_status as string | undefined;
   if (
-    subStatus === "trial_active" ||
-    subStatus === "subscription_active" ||
-    subStatus === "cancelled"
+    !showCheckout &&
+    (subStatus === "trial_active" ||
+      subStatus === "subscription_active" ||
+      subStatus === "cancelled")
   ) {
-    return <ManageSubscription />;
+    return <ManageSubscription onReactivate={() => setShowCheckout(true)} />;
   }
 
   // ─── Tela de sucesso ──────────────────────────────────────────────────────
