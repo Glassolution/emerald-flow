@@ -65,7 +65,6 @@ export default function Perfil() {
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
   const [showManageSheet, setShowManageSheet] = useState(false);
   const [cancelStep, setCancelStep] = useState<"idle" | "confirm" | "loading" | "done">("idle");
-  const [refundStep, setRefundStep] = useState<"idle" | "confirm" | "loading" | "done">("idle");
 
   useEffect(() => {
     let isMounted = true;
@@ -235,54 +234,7 @@ export default function Perfil() {
   const handleViewSaved = () => navigate("/app/favoritos");
   const handleViewHelp = () => navigate("/app/ajuda");
 
-  const handleCancelSubscription = async () => {
-    setCancelStep("loading");
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const res = await fetch("/api/cancel-subscription", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erro ao cancelar");
-      setCancelStep("done");
-      toast({
-        title: "Assinatura cancelada",
-        description: data.message ?? "Você mantém o acesso até o fim do período pago.",
-      });
-      setSubscriptionInfo((prev) => (prev ? { ...prev, status: "cancelled" } : null));
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
-      setCancelStep("idle");
-    }
-  };
-
-  const handleRequestRefund = async () => {
-    setRefundStep("loading");
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const res = await fetch("/api/request-refund", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erro ao solicitar reembolso");
-      setRefundStep("done");
-      toast({
-        title: "Reembolso solicitado",
-        description: data.message ?? "Você receberá o estorno em breve.",
-      });
-      setSubscriptionInfo((prev) => (prev ? { ...prev, status: "cancelled" } : null));
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
-      setRefundStep("idle");
-    }
-  };
-
+  // Computed subscription values (must be defined before handlers that use them)
   const isProActive =
     subscriptionInfo?.status === "trial_active" ||
     subscriptionInfo?.status === "subscription_active";
@@ -292,10 +244,40 @@ export default function Perfil() {
     (subscriptionInfo?.daysSincePurchase ?? 999) <= 7 &&
     subscriptionInfo?.paymentMethod !== null;
 
+  const handleCancelSubscription = async () => {
+    setCancelStep("loading");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      // Dentro de 7 dias → reembolso automático + acesso encerrado imediatamente
+      // Após 7 dias → apenas cancela renovação, acesso mantido até vencimento
+      const endpoint = canRefund ? "/api/request-refund" : "/api/cancel-subscription";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro ao processar");
+      setCancelStep("done");
+      toast({
+        title: canRefund ? "Reembolso solicitado" : "Assinatura cancelada",
+        description:
+          data.message ??
+          (canRefund
+            ? "Seu acesso foi encerrado e o estorno será processado em breve."
+            : "Você mantém o acesso até o fim do período pago."),
+      });
+      setSubscriptionInfo((prev) => (prev ? { ...prev, status: "cancelled" } : null));
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      setCancelStep("idle");
+    }
+  };
+
   const closeSheet = () => {
     setShowManageSheet(false);
     setCancelStep("idle");
-    setRefundStep("idle");
   };
 
   return (
@@ -544,7 +526,10 @@ export default function Perfil() {
           <div className="absolute inset-0 bg-black/40" onClick={closeSheet} />
 
           {/* Sheet */}
-          <div className="relative bg-white rounded-t-[32px] px-6 pt-5 pb-10 space-y-5">
+          <div
+            className="relative bg-white rounded-t-[32px] px-6 pt-5 space-y-5"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 5.5rem)" }}
+          >
             {/* Handle bar */}
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto" />
 
@@ -583,33 +568,51 @@ export default function Perfil() {
             <div className="h-px bg-gray-100" />
 
             {/* Actions */}
-            {cancelStep === "done" || refundStep === "done" ? (
-              /* Success state */
-              <div className="bg-emerald-50 rounded-2xl p-4 text-center space-y-1">
-                <p className="text-[14px] font-bold text-emerald-700">Ação concluída</p>
-                <p className="text-[12px] text-emerald-600">
-                  Você mantém o acesso até o fim do período pago.
+            {cancelStep === "done" ? (
+              /* ── Success state ── */
+              <div className="bg-gray-50 rounded-2xl p-4 text-center space-y-1">
+                <p className="text-[14px] font-bold text-[#1a1a1a]">
+                  {canRefund ? "Reembolso solicitado" : "Assinatura cancelada"}
+                </p>
+                <p className="text-[12px] text-[#8a8a8a] leading-relaxed">
+                  {canRefund
+                    ? "Seu acesso foi encerrado. O estorno será processado em breve."
+                    : `Acesso garantido até ${formatExpiryFull(subscriptionInfo?.expiresAt ?? null)}.`}
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
-                {/* ── Cancel subscription ── */}
+                {/* ── Idle: single cancel button ── */}
                 {cancelStep === "idle" && (
                   <button
                     onClick={() => setCancelStep("confirm")}
                     className="w-full py-3.5 rounded-2xl border border-gray-200 text-[14px] font-semibold text-[#4a4a4a] bg-white active:bg-gray-50 transition-all"
                   >
                     Cancelar assinatura
+                    {canRefund && (
+                      <span className="block text-[11px] font-normal text-amber-500 mt-0.5">
+                        Reembolso automático incluído · CDC Art. 49
+                      </span>
+                    )}
                   </button>
                 )}
 
+                {/* ── Confirm ── */}
                 {cancelStep === "confirm" && (
                   <div className="bg-red-50 rounded-2xl p-4 space-y-3">
-                    <p className="text-[13px] font-bold text-red-600">Cancelar assinatura?</p>
+                    <p className="text-[13px] font-bold text-red-600">
+                      {canRefund ? "Cancelar e reembolsar?" : "Cancelar assinatura?"}
+                    </p>
                     <p className="text-[12px] text-red-500 leading-relaxed">
-                      Você continuará com acesso até{" "}
-                      <strong>{formatExpiryFull(subscriptionInfo?.expiresAt ?? null)}</strong>. Após
-                      esse prazo, o acesso será encerrado.
+                      {canRefund ? (
+                        "O valor pago será estornado e seu acesso encerrado imediatamente."
+                      ) : (
+                        <>
+                          Você mantém acesso até{" "}
+                          <strong>{formatExpiryFull(subscriptionInfo?.expiresAt ?? null)}</strong>.
+                          Após esse prazo o acesso será encerrado.
+                        </>
+                      )}
                     </p>
                     <div className="flex gap-2 pt-1">
                       <button
@@ -628,58 +631,14 @@ export default function Perfil() {
                   </div>
                 )}
 
+                {/* ── Loading ── */}
                 {cancelStep === "loading" && (
                   <div className="flex items-center justify-center py-3 gap-2">
                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-red-400" />
-                    <span className="text-[13px] text-[#8a8a8a]">Cancelando assinatura…</span>
+                    <span className="text-[13px] text-[#8a8a8a]">
+                      {canRefund ? "Processando reembolso…" : "Cancelando assinatura…"}
+                    </span>
                   </div>
-                )}
-
-                {/* ── Refund (within 7 days) ── */}
-                {canRefund && cancelStep === "idle" && (
-                  <>
-                    {refundStep === "idle" && (
-                      <button
-                        onClick={() => setRefundStep("confirm")}
-                        className="w-full py-3.5 rounded-2xl bg-amber-50 border border-amber-100 text-[14px] font-semibold text-amber-700 active:scale-[0.98] transition-all"
-                      >
-                        Solicitar reembolso
-                        <span className="block text-[11px] font-normal text-amber-500 mt-0.5">
-                          Disponível por 7 dias · CDC Art. 49
-                        </span>
-                      </button>
-                    )}
-
-                    {refundStep === "confirm" && (
-                      <div className="bg-amber-50 rounded-2xl p-4 space-y-3">
-                        <p className="text-[13px] font-bold text-amber-700">Confirmar reembolso?</p>
-                        <p className="text-[12px] text-amber-600 leading-relaxed">
-                          O valor pago será estornado e sua assinatura cancelada imediatamente.
-                        </p>
-                        <div className="flex gap-2 pt-1">
-                          <button
-                            onClick={() => setRefundStep("idle")}
-                            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-[13px] font-semibold text-[#4a4a4a] bg-white"
-                          >
-                            Voltar
-                          </button>
-                          <button
-                            onClick={handleRequestRefund}
-                            className="flex-1 py-2.5 rounded-xl bg-amber-500 text-[13px] font-bold text-white active:scale-95 transition-all"
-                          >
-                            Confirmar
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {refundStep === "loading" && (
-                      <div className="flex items-center justify-center py-3 gap-2">
-                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-amber-400" />
-                        <span className="text-[13px] text-[#8a8a8a]">Solicitando reembolso…</span>
-                      </div>
-                    )}
-                  </>
                 )}
               </div>
             )}
