@@ -48,7 +48,7 @@ interface PixData {
 
 function ManageSubscription() {
   const { user, refreshUser } = useAuth();
-  const { checkTrialStatus } = useSubscription();
+  const { isCancelled: subIsCancelled, plan: subPlan, refreshSubscription } = useSubscription();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isRefunding, setIsRefunding] = useState(false);
@@ -98,8 +98,7 @@ function ManageSubscription() {
         return;
       }
 
-      await refreshUser();
-      checkTrialStatus();
+      await refreshSubscription();
       toast({ title: "Estorno solicitado", description: data.message });
       navigate("/app/home", { replace: true });
     } catch (err: unknown) {
@@ -135,8 +134,7 @@ function ManageSubscription() {
         return;
       }
 
-      await refreshUser();
-      checkTrialStatus();
+      await refreshSubscription();
       toast({ title: "Plano cancelado", description: data.message });
     } catch (err: unknown) {
       toast({
@@ -160,16 +158,16 @@ function ManageSubscription() {
           <span className="text-[13px] font-semibold text-gray-500">Plano atual</span>
           <span
             className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-              isCancelled
-                ? "bg-red-100 text-red-600"
-                : "bg-green-100 text-green-700"
+              subPlan === 'pro'
+                ? "bg-green-100 text-green-700"
+                : "bg-gray-100 text-gray-600"
             }`}
           >
-            {isCancelled ? "Cancelado" : "Ativo"}
+            {subPlan === 'pro' ? "Ativo" : "Free"}
           </span>
         </div>
         <p className="text-[20px] font-black text-[#1a1a1a]">
-          CALC Pro — {planLabel}
+          {subIsCancelled ? "CALC Free" : `CALC Pro — ${planLabel}`}
         </p>
         {planAmount && (
           <p className="text-[14px] text-gray-500 mt-0.5">
@@ -183,6 +181,23 @@ function ManageSubscription() {
           </p>
         )}
       </div>
+
+      {/* Card Free — visível quando assinatura foi cancelada */}
+      {subIsCancelled && (
+        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
+          <p className="text-[14px] text-gray-600 leading-relaxed">
+            Sua assinatura foi cancelada. Você continua com acesso ao plano{" "}
+            <span className="font-semibold text-gray-800">Free</span> com{" "}
+            <span className="font-semibold">1 cálculo por dia</span>.
+          </p>
+          <button
+            onClick={() => navigate('/subscription')}
+            className="mt-3 text-[14px] font-semibold text-blue-600 hover:underline"
+          >
+            Reativar plano Pro →
+          </button>
+        </div>
+      )}
 
       {/* Estorno — visível dentro dos 7 dias */}
       {canRefund && (
@@ -284,7 +299,7 @@ function ManageSubscription() {
 // ─── Subscription principal ───────────────────────────────────────────────────
 
 export default function Subscription() {
-  const { isTrialExpired, checkTrialStatus } = useSubscription();
+  const { isFree, refreshSubscription } = useSubscription();
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
@@ -405,8 +420,7 @@ export default function Subscription() {
           localStorage.removeItem("calc_pending_pix");
           if (user) {
             localStorage.setItem(`has_paid_${user.id}`, "true");
-            await refreshUser();
-            checkTrialStatus();
+            await refreshSubscription();
             toast({ title: "PIX confirmado!", description: "Bem-vindo ao CALC Pro." });
             navigate("/app/home", { replace: true });
           } else {
@@ -429,7 +443,7 @@ export default function Subscription() {
   const selectedPlan = PLANS.find((p) => p.id === selectedPlanId) ?? PLANS[1];
 
   const handleClose = () => {
-    if (!isTrialExpired) navigate(-1);
+    navigate(-1);
   };
 
   const formatCardNumber = (value: string) => {
@@ -530,8 +544,7 @@ export default function Subscription() {
       } else {
         if (user) {
           localStorage.setItem(`has_paid_${user.id}`, "true");
-          await refreshUser();
-          checkTrialStatus();
+          await refreshSubscription();
           toast({ title: "Assinatura ativa!", description: "Bem-vindo ao CALC Pro." });
           navigate("/app/home", { replace: true });
         } else {
@@ -691,11 +704,9 @@ export default function Subscription() {
               {paymentMethod === "card" ? "7 dias grátis · cancele quando quiser" : "Pagamento único via PIX"}
             </p>
           </div>
-          {!isTrialExpired && (
-            <button onClick={handleClose} className="p-2 text-gray-400">
-              <X size={20} />
-            </button>
-          )}
+          <button onClick={handleClose} className="p-2 text-gray-400">
+            <X size={20} />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
@@ -848,13 +859,11 @@ export default function Subscription() {
   // ─── Step 1: Seleção de plano ─────────────────────────────────────────────
   return (
     <div className="h-[100svh] bg-[#f3f4f6] flex flex-col overflow-hidden relative">
-      {!isTrialExpired && (
-        <div className="absolute top-6 right-6 z-50">
-          <button onClick={handleClose} className="p-2 text-gray-500 bg-white/50 backdrop-blur-sm rounded-full">
-            <X size={20} />
-          </button>
-        </div>
-      )}
+      <div className="absolute top-6 right-6 z-50">
+        <button onClick={handleClose} className="p-2 text-gray-500 bg-white/50 backdrop-blur-sm rounded-full">
+          <X size={20} />
+        </button>
+      </div>
 
       <div className="h-[55%] w-full relative" ref={emblaRef}>
         <div className="flex h-full">

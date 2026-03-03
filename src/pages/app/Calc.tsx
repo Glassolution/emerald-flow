@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Calculator, RotateCcw, AlertCircle, CheckCircle2, Plus, Trash2, Package, History, Save, ChevronRight, FlaskConical, Droplets, Info, MoreVertical, Plane, Search } from "lucide-react";
+import { Calculator, RotateCcw, AlertCircle, CheckCircle2, Plus, Trash2, Package, History, Save, ChevronRight, FlaskConical, Droplets, Info, MoreVertical, Plane, Search, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ import { SelectCustomProductModal } from "@/components/calc/SelectCustomProductM
 import { AddProductModal } from "@/components/catalog/AddProductModal";
 import { addCustomProduct } from "@/lib/productCatalogService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/contexts/I18nContext";
 import type { ProductCategory, ProductUnit as CatalogProductUnit } from "@/types/product";
@@ -46,6 +47,7 @@ export default function Calc() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { t } = useI18n();
+  const { canCalculate, registerCalculation, isFree, calculationsUsedToday, FREE_DAILY_LIMIT } = useSubscription();
 
   const [areaHa, setAreaHa] = useState<string>("");
   const [litrosPorHa, setLitrosPorHa] = useState<string>("");
@@ -55,6 +57,7 @@ export default function Calc() {
   const [customProductModalOpen, setCustomProductModalOpen] = useState(false);
   const [addProductModalOpen, setAddProductModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [catalogSearch, setCatalogSearch] = useState<string>("");
@@ -137,6 +140,11 @@ export default function Calc() {
   };
 
   const handleCalculate = () => {
+    if (!canCalculate()) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     setError(null);
     setResult(null);
 
@@ -169,6 +177,7 @@ export default function Calc() {
     });
 
     if (calculation.result) {
+      registerCalculation();
       setResult(calculation.result);
       // Tenta rolar o container principal (main) se existir, ou a janela
       const mainContainer = document.querySelector('main');
@@ -363,9 +372,23 @@ export default function Calc() {
             </div>
           )}
 
+          {isFree && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 flex items-center justify-between">
+              <span className="text-amber-800 text-[13px] font-medium">
+                Plano Free — {Math.max(0, FREE_DAILY_LIMIT - calculationsUsedToday)} cálculo restante hoje
+              </span>
+              <button
+                onClick={() => navigate('/subscription')}
+                className="text-amber-900 font-bold text-[13px] underline ml-2 shrink-0"
+              >
+                Fazer upgrade
+              </button>
+            </div>
+          )}
+
           <div className="px-1 pt-4 pb-8">
-            <Button 
-              onClick={handleCalculate} 
+            <Button
+              onClick={handleCalculate}
               className="w-full h-12 bg-[#1a1a1a] text-white text-[15px] font-bold rounded-2xl shadow-md active:scale-95 transition-all hover:bg-black"
             >
               Realizar cálculo
@@ -529,6 +552,35 @@ export default function Calc() {
 
       <SelectCustomProductModal open={customProductModalOpen} onClose={() => setCustomProductModalOpen(false)} onSelectProduct={handleSelectCustomProduct} onAddNew={() => setAddProductModalOpen(true)} />
       {user && <AddProductModal open={addProductModalOpen} onClose={() => setAddProductModalOpen(false)} onSubmit={handleSaveNewProduct} />}
+
+      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <DialogContent className="max-w-sm rounded-[32px] border-none p-0 overflow-hidden">
+          <div className="bg-[#1a1a1a] px-6 pt-8 pb-6 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-amber-400 flex items-center justify-center mx-auto mb-4">
+              <Zap size={28} className="text-[#1a1a1a]" fill="currentColor" />
+            </div>
+            <h2 className="text-[22px] font-black text-white mb-2">Limite atingido</h2>
+            <p className="text-[14px] text-gray-400 leading-relaxed">
+              O plano Free permite <strong className="text-white">{FREE_DAILY_LIMIT} cálculo por dia</strong>.
+              Faça upgrade para cálculos ilimitados.
+            </p>
+          </div>
+          <div className="bg-white px-6 py-5 space-y-3">
+            <button
+              onClick={() => { setShowUpgradeModal(false); navigate('/subscription'); }}
+              className="w-full h-12 bg-[#1a1a1a] text-white text-[15px] font-bold rounded-2xl active:scale-95 transition-all"
+            >
+              Ver planos Pro →
+            </button>
+            <button
+              onClick={() => setShowUpgradeModal(false)}
+              className="w-full h-10 text-[14px] font-medium text-gray-400"
+            >
+              Agora não
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
