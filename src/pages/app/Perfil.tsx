@@ -523,11 +523,14 @@ export default function Perfil() {
       {showManageSheet && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40" onClick={closeSheet} />
+          <div
+            className="absolute inset-0 bg-black/40 animate-backdrop-in"
+            onClick={closeSheet}
+          />
 
           {/* Sheet */}
           <div
-            className="relative bg-white rounded-t-[32px] px-6 pt-5 space-y-5"
+            className="relative bg-white rounded-t-[32px] px-6 pt-5 space-y-5 animate-sheet-up"
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 5.5rem)" }}
           >
             {/* Handle bar */}
@@ -589,11 +592,6 @@ export default function Perfil() {
                     className="w-full py-3.5 rounded-2xl border border-gray-200 text-[14px] font-semibold text-[#4a4a4a] bg-white active:bg-gray-50 transition-all"
                   >
                     Cancelar assinatura
-                    {canRefund && (
-                      <span className="block text-[11px] font-normal text-amber-500 mt-0.5">
-                        Reembolso automático incluído · CDC Art. 49
-                      </span>
-                    )}
                   </button>
                 )}
 
