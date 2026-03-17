@@ -867,12 +867,6 @@ export default function Subscription() {
   // ─── Step 1: Seleção de plano ─────────────────────────────────────────────
   return (
     <div className="h-[100svh] bg-[#f3f4f6] flex flex-col overflow-hidden relative">
-      <div className="absolute top-6 right-6 z-50">
-        <button onClick={handleClose} className="p-2 text-gray-500 bg-white/50 backdrop-blur-sm rounded-full">
-          <X size={20} />
-        </button>
-      </div>
-
       <div className="h-[55%] w-full relative" ref={emblaRef}>
         <div className="flex h-full">
           {carouselImages.map((img, index) => (
@@ -943,6 +937,22 @@ export default function Subscription() {
             <button className="hover:text-gray-600">Política de privacidade</button>
           </div>
         </div>
+      </div>
+
+      {/* Botão X por cima de tudo: último no DOM + z-[100] + pointer-events-auto para garantir clique */}
+      <div className="absolute top-6 right-6 z-[100] pointer-events-none">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleClose();
+          }}
+          className="p-2.5 min-w-[44px] min-h-[44px] text-gray-500 bg-white/50 backdrop-blur-sm rounded-full pointer-events-auto touch-manipulation"
+          aria-label="Fechar"
+        >
+          <X size={20} />
+        </button>
       </div>
     </div>
   );
