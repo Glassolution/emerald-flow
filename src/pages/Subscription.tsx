@@ -450,7 +450,17 @@ export default function Subscription() {
   const selectedPlan = PLANS.find((p) => p.id === selectedPlanId) ?? PLANS[1];
 
   const handleClose = () => {
-    navigate(-1);
+    console.log("[Subscription] X clicado");
+
+    try {
+      const dismissUntil = new Date();
+      dismissUntil.setHours(dismissUntil.getHours() + 24);
+      localStorage.setItem("subscription_dismissed_until", dismissUntil.toISOString());
+    } catch (err) {
+      console.error("[Subscription] Não foi possível salvar o dismiss da subscription.", err);
+    }
+
+    navigate("/app/home");
   };
 
   const formatCardNumber = (value: string) => {
